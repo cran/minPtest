@@ -1,0 +1,381 @@
+minPtest <-
+function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed=NULL,subset=NULL,multicore=FALSE,parallel=FALSE,trace=FALSE){
+  call <- match.call()
+  if (!is.null(subset)) {
+    y <- y[subset]
+    x <- x[subset,]
+    if (!is.null(cov)) {cov <- cov[subset,]}
+    if (!is.null(matchset)) {matchset <- matchset[subset]}
+  }
+  if(sum(is.na(y))>0) {warning("response vector y includes NAs, subjects are excluded")}
+  if(ncol(SNPtoGene)!=2){
+    stop("mapping matrix SNPtoGene should have two columns")}
+  if(sum(is.na(SNPtoGene[,2]))>0) {stop("mapping matrix SNPtoGene includes NAs")}
+  if(is.null(colnames(x))){
+    warning("SNP matrix x has no colnames, not comparable to mapping matrix SNPtoGene")}
+  if((sum(SNPtoGene[,1]%in%colnames(x)==FALSE)>0)){
+    stop("different names of SNPs in SNP matrix x and mapping matrix SNPtoGene")}
+  if((sum(colnames(x)%in%SNPtoGene[,1]==FALSE)>0)){
+    stop("different names of SNPs in SNP matrix x and mapping matrix SNPtoGene")}
+  if(nrow(x)!=length(y)){
+    stop("length of response vector y should equal the number of rows of SNP matrix x")}
+  snp.miss <- sum(is.na(x))
+  if(snp.miss==0){
+    if(length(unique(as.factor(x)))!=3){
+      warning("SNP matrix x should contain three features")}
+  }
+  if(snp.miss!=0){
+    if(length(unique(as.factor(x)))!=4){
+      warning("SNP matrix x should contain three features")}
+  }
+  if(!is.null(matchset)){
+    if(length(y)!=length(matchset))
+      {stop("length of response vector y should equal the length of the  matchset vector")}
+    if(sum(is.na(matchset))>0) {warning("matchset vector includes NA, subjects are excluded")}
+    resp.match <- data.frame(y=y,matchset=matchset)
+    matchnr.cases <- resp.match[resp.match[,1]==1,2]
+    matchnr.controls <- resp.match[resp.match[,1]==0,2]
+    cases.match <- lapply(seq_along(matchnr.cases), function(i){
+      if(!is.na(matchnr.cases[i])){
+        z <- which(matchnr.controls==matchnr.cases[i])
+        if(length(z)<1){
+          z.miss <- FALSE
+        }else{
+          z.miss <- TRUE
+        }
+        z.miss
+      }
+    })
+    if(sum(unlist(cases.match)==FALSE)>0) {warning("not every case has controls")}
+    control.match <- lapply(seq_along(matchnr.controls), function(i){
+      if(!is.na(matchnr.controls[i])){
+        z <- which(matchnr.cases==matchnr.controls[i])
+        if(length(z)<1){
+          z.miss <- FALSE
+        }else{
+          z.miss <- TRUE
+        }
+        z.miss
+      }
+    })
+    if(sum(unlist(control.match)==FALSE)>0) {warning("not every control belongs to a case")}
+  }
+  nrsnp <- dim(x)[2]
+  n <- length(y)
+  nrgene <- length(unique(SNPtoGene[,2]))
+  if(parallel){
+    if(!require("snowfall")) {
+      stop("package 'snowfall' must be installed and loaded, otherwise parallelization cannot be performed")
+    }else{
+      require("snowfall")
+      if(!sfIsRunning()) sfInint(parallel=TRUE)
+    }
+  }
+  if(multicore){
+    if(!require("multicore")){
+      stop("package 'multicore' must be installed and loaded, otherwise parallelization cannot be performed")
+    }else{
+      require("multicore")}}
+  if(parallel & multicore){
+    warning("parallelization is performed using 'snowfall'")
+  }
+##################################Cochran-Armitage trend test###################################################
+  if(is.null(formula)){
+    method <- "Cochran-Armitage Trend Test"
+    if(!is.null(cov) | !is.null(matchset)){
+      warning("missing formula, Cochran-Armitage Trend Test is performed")
+    }
+    valmax <- max(unique(x))
+    valmin <- min(unique(x))
+    tsnps <- t(x)
+    if(parallel){
+      sfLibrary(scrime)
+      sfExport("valmax","valmin","tsnps")
+    }
+    cases <- rowTables(tsnps[,y==1],levels=valmin:valmax)
+    controls <- rowTables(tsnps[,y==0],levels=valmin:valmax)
+    p_value <- as.matrix(rowCATTs(cases,controls)$rawp)
+    colnames(p_value) <- "p_value"
+    perrfunc <- function(permut){
+      if(trace) {cat("permutation",permut,"\n")}
+      set.seed(seed[permut])
+      permy <- sample(y)
+      casesperm <- rowTables(tsnps[,permy==1],levels=valmin:valmax)
+      controlsperm <- rowTables(tsnps[,permy==0],levels=valmin:valmax)
+      pperr <- as.matrix(rowCATTs(casesperm,controlsperm)$rawp)
+      return(pperr)
+    }
+##################################univariate logistische regression#############################################
+  }else{
+    snpvecnames <- colnames(x)
+    if(!is.null(cov) & as.character(formula)[3]==1){
+      warning("no specification of covariables in the formula, logistic regression is performed without covariables")
+    }
+    if(parallel){
+      sfExport("formula","snpvecnames")
+      if(!is.null(matchset)){
+        sfExport("n","matchset")
+        sfLibrary(Epi)
+      }
+    }
+##### logistic regression without covariables
+    if(is.null(cov)){
+      dat <- as.data.frame(cbind(y,x))
+      colnames(dat)[1] <- as.character(formula)[2]
+      if(as.character(formula)[3]!=1)
+        {warning("no covariable matrix, logistic regression is performed without covariables")}
+#unconditional logistic regression without covariables
+      if(is.null(matchset)){
+        method <- "unconditional logistic regression (glm)"
+        if(parallel){ sfExport("dat") }
+        p_valfunc <- function(i) {
+          new.form <- as.formula(paste(as.character(formula)[2],snpvecnames[i], sep = "~"))
+          fit <- glm(new.form, binomial, dat)
+          fit.res <- summary(fit)$coefficients
+          fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
+          names(fit.res) <- snpvecnames[i]
+          gc()
+          gc()
+          fit.res
+        }
+        perrfunc <- function(permut){
+          if(trace) {cat("permutation", permut , "\n")}
+          set.seed(seed[permut])
+          permy <- sample(y)
+          dat$permy <- permy
+          pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
+            new.form <- as.formula(paste("permy", snpvecnames[i], sep = "~"))
+            fit <- glm(new.form, binomial, dat)
+            fit.res <- summary(fit)$coefficients
+            fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
+            gc()
+            gc()
+            fit.res
+          })
+          names(pperr) <- snpvecnames
+          pperr <- as.matrix(pperr)
+          return(pperr)
+        }
+      }else{
+#conditional logistic regression without covariables
+        method <- "conditional logistic regression"
+        dat$matchset <- matchset
+        if(parallel){ sfExport("dat") }
+        p_valfunc <- function(i) {
+          new.form <- as.formula(paste(as.character(formula)[2],snpvecnames[i], sep = "~"))
+          fit <- clogistic(new.form, strata=matchset, data=dat)
+          coef <- Epi:::coef.clogistic(fit)
+          se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+          p <- 1 - pchisq((coef/se)^2, 1)
+          fit.res <- p[length(p)]    
+          gc()
+          gc()
+          fit.res
+        }
+        perrfunc <- function(permut){
+          if(trace) {cat("permutation", permut, "\n")}
+          set.seed(seed[permut])
+          perm <- sample(n)
+          permy <- y[perm]
+          permmatch <- matchset[perm]
+          dat$permy <- permy
+          dat$permmatch <- permmatch
+          pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
+            new.form <- as.formula(paste("permy", snpvecnames[i], sep = "~"))
+            fit <- clogistic(new.form, strata=permmatch, data=dat)
+            coef <- Epi:::coef.clogistic(fit)
+            se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+            p <- 1 - pchisq((coef/se)^2, 1)
+            fit.res <- p[length(p)]
+            gc()
+            gc()
+            fit.res
+          })
+          names(pperr) <- snpvecnames
+          pperr <- as.matrix(pperr)
+          return(pperr)
+        }
+      }
+    }else{
+##### logistic regression with covariable
+      if(nrow(cov)!=length(y)){
+        stop("length of response vector y should equal the number of rows of covariate matrix")
+      }
+      if(is.null(colnames(cov))){
+        warning("no colnames in cov, not comparable to covariate names in formula")
+      }
+      w <- length(which(unlist(strsplit(as.character(formula)[3]," "))!="+"))
+      if(ncol(cov)!=w){warning("number of covariates in formula differs from covariates in covariate matrix")}
+      dat <- as.data.frame(cbind(y,cov,x))
+      colnames(dat)[1] <- as.character(formula)[2]
+      perr.formula <- paste("permy",as.character(formula)[3],sep="~")
+      if(parallel){ sfExport("perr.formula") }
+#unconditional logistic regression with covariables
+      if(is.null(matchset)){
+        method <- "unconditional logistic regression (glm)"
+        if(parallel) { sfExport("dat") }
+        p_valfunc <- function(i) {
+          new.form <- as.formula(paste(deparse(formula),snpvecnames[i], sep = "+"))
+          fit <- glm(new.form, binomial, dat)
+          fit.res <- summary(fit)$coefficients
+          fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
+          names(fit.res) <- snpvecnames[i]
+          gc()
+          gc()
+          fit.res
+        }
+        perrfunc <- function(permut){
+          if(trace) {cat("permutation" , permut, "\n")}
+          set.seed(seed[permut])
+          permy <- sample(y)
+          dat$permy <- permy
+          pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
+            new.form <- as.formula(paste(perr.formula, snpvecnames[i], sep = "+"))
+            fit <- glm(new.form, binomial, dat)
+            fit.res <- summary(fit)$coefficients
+            fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
+            gc()
+            gc()
+            fit.res
+          })
+          names(pperr) <- snpvecnames
+          pperr <- as.matrix(pperr)
+          return(pperr)
+        }
+      }else{
+# conditional logistic regression with covariables
+        method <- "conditional logistic regression (clogistic)"
+        dat$matchset <- matchset
+        if(parallel) { sfExport("dat") }
+        p_valfunc <- function(i) {
+          new.form <- as.formula(paste(deparse(formula),snpvecnames[i], sep = "+"))
+          fit <- clogistic(new.form, strata=matchset, data=dat)
+          coef <- Epi:::coef.clogistic(fit)
+          se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+          p <- 1 - pchisq((coef/se)^2, 1)
+          fit.res <- p[length(p)]
+          gc()
+          gc()
+          fit.res
+        }
+        perrfunc <- function(permut){
+          if(trace) {cat("permutation", permut , "\n")}
+          set.seed(seed[permut])
+          perm <- sample(n)
+          permy <- y[perm]
+          permmatch <- matchset[perm]
+          dat$permy <- permy
+          dat$permmatch <- permmatch
+          pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
+            new.form <- as.formula(paste(perr.formula, snpvecnames[i], sep = "+"))
+            fit <- clogistic(new.form, strata=permmatch, data=dat)
+            coef <- Epi:::coef.clogistic(fit)
+            se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+            p <- 1 - pchisq((coef/se)^2, 1)
+            fit.res <- p[length(p)]
+            gc()
+            gc()
+            fit.res
+          })
+          names(pperr) <- snpvecnames
+          pperr <- as.matrix(pperr)
+          return(pperr)
+        }
+###################################################################################
+      }
+    }
+    if(parallel){
+      p_value <- sfClusterApplyLB(seq_along(snpvecnames),p_valfunc)
+    }else{
+      if(multicore){
+        if(multicore>1){
+          p_value <- mclapply(seq_along(snpvecnames),p_valfunc,mc.preschedule=FALSE,mc.cores=multicore)
+        }else{
+          p_value <- mclapply(seq_along(snpvecnames),p_valfunc,mc.preschedule=FALSE)
+        }
+      }else{
+        p_value <- lapply(seq_along(snpvecnames),p_valfunc)
+      }
+    }
+    p_value <- as.matrix(unlist(p_value))
+    colnames(p_value) <- "p_value"
+  }
+  if(is.null(seed)){
+    seed <- sample(1:1e7,size=permutation)
+  }else{
+    if(length(seed)!=permutation){
+      stop("length of seed vector should equal the number of permutations")
+    }
+  }
+  if(parallel){
+    sfExport("y","seed","permutation","trace")
+    p_valuesperr <- sfClusterApplyLB(1:permutation, perrfunc)
+    sfStop()
+  }else{
+    if(multicore){
+      if(multicore>1){
+        p_valuesperr <- mclapply(1:permutation,perrfunc,mc.preschedule=FALSE,mc.cores=multicore)
+      }else{
+        p_valuesperr <- mclapply(1:permutation,perrfunc,mc.preschedule=FALSE)
+      }
+    }else{
+      p_valuesperr <- lapply(1:permutation,perrfunc)
+    }
+  }
+  psnpperr <- matrix(unlist(p_valuesperr),ncol=permutation,nrow=nrsnp)
+  rownames(psnpperr) <- colnames(x)
+  colnames(psnpperr) <- c(1:permutation)
+  genes <- unique(SNPtoGene[,2])
+  pgen <- lapply(seq_along(genes), function(i){
+    snpnames <- SNPtoGene[which(SNPtoGene[,2]==genes[i]),1]
+    minpgen <- min(p_value[snpnames,],na.rm=TRUE)
+    minpgen
+  })
+  names(pgen) <- genes
+  pgen <- as.matrix(unlist(pgen))
+  colnames(pgen) <- "test statistic"
+  pgenperr <- lapply(p_valuesperr, function(x){
+    p_list <- x
+    minpper <- apply(matrix(seq_along(genes)), MARGIN=1, FUN=function(i){
+      snpnames <- SNPtoGene[which(SNPtoGene[,2]==genes[i]),1]
+      minpgenperr <- min(p_list[snpnames,],na.rm=TRUE)
+      minpgenperr
+    })
+  })
+  pgenperr <- matrix(unlist(pgenperr),ncol=permutation,nrow=length(genes))
+  colnames(pgenperr) <- c(1:permutation)
+  rownames(pgenperr) <- genes
+  minp <- double(length(pgen))
+  for(i in 1:length(pgen)){
+    minp[i] <- mean(pgenperr[i,]<=pgen[i])    
+  }
+  names(minp) <- genes
+################################################################################################################
+## mutilple testing correction
+  p.adj.minp <- matrix(p.adjust(p=minp, method="bonferroni", n=nrgene),nrow=length(minp),ncol=1)
+  rownames(p.adj.minp) <- genes
+  colnames(p.adj.minp) <- c("p.adjust")
+###############################################################################################################3
+  minp <- as.matrix(minp)
+  colnames(minp) <- "minP"
+  p.adj.psnp <- matrix(p.adjust(p=as.vector(p_value), method="bonferroni", n=nrsnp),nrow=length(p_value), ncol=1)	
+  colnames(p.adj.psnp) <- c("p.adjust")
+  rownames(p.adj.psnp) <- rownames(p_value)
+  fit <- list(call=call,n=n,nrsnp=nrsnp,nrgene=nrgene,
+              snp.miss=snp.miss,method=method,n.permute=permutation,
+              SNPtoGene=SNPtoGene,psnp=p_value,psnpperm=psnpperr,
+              zgen=pgen,zgenperm=pgenperr,minp=minp,
+              p.adj.psnp=p.adj.psnp,p.adj.minp=p.adj.minp)
+  class(fit) <- "minPtest"
+  fit
+}
+
+print.minPtest <- function(x, ...){
+  cat("\nUsed method:",x$method, "for", x$n, "subjects")
+  cat("\nCall: ",deparse(x$call),"\n\n")
+  cat("Number of genes:", x$nrgene, "\n")
+  cat("Number of SNPs:", x$nrsnp, "\n")
+  cat("Number of missings in the SNP matrix:", x$snp.miss, "\n")
+  cat("Number of permutations:", x$n.permute, "\n")
+  invisible()
+}

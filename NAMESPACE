@@ -1,0 +1,8 @@
+export(minPtest,summary.minPtest,generateSNPs)
+import(scrime, Epi)
+S3method(print,minPtest)
+S3method(plot,minPtest)
+S3method(print,summary.minPtest)
+S3method(print,generateSNPs)
+
+
