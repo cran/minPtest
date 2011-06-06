@@ -9,8 +9,8 @@ Permutation-based p-values estimation via min P test, a gene region-level summar
 }
 \usage{
 minPtest(y, x, SNPtoGene, formula = NULL, cov = NULL, matchset = NULL,
-	permutation = 1000, seed = NULL, subset = NULL,
-	multicore = FALSE, parallel = FALSE, trace = FALSE)
+         permutation = 1000, seed = NULL, subset = NULL,
+         multicore = FALSE, parallel = FALSE, trace = FALSE)
 }
 \arguments{
   \item{y}{
@@ -132,6 +132,6 @@ minPtest.object <- minPtest(y=sim1$y, x=sim1$x, SNPtoGene=sim1$SNPtoGene,
 	seed=seed1)
 
 }
-\keyword{single nucleodide polimorphisms}
+\keyword{single nucleotide polimorphisms}
 \keyword{min P test}
 \keyword{permutation-based resampling}

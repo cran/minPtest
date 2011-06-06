@@ -9,7 +9,7 @@ Simulates SNP data with genotypes coded by 0, 1 and 2 as well as a binary and a 
 }
 \usage{
 generateSNPs(n, gene.no, block.no, block.size, p.same,
-	     p.different = NULL, p.minor, n.sample, SNPtoBETA)
+             p.different = NULL, p.minor, n.sample, SNPtoBETA)
 }
 \arguments{
   \item{n}{

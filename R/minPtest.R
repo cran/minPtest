@@ -3,19 +3,19 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   call <- match.call()
   if (!is.null(subset)) {
     y <- y[subset]
-    x <- x[subset,]
-    if (!is.null(cov)) {cov <- cov[subset,]}
+    x <- x[subset, , drop=FALSE]
+    if (!is.null(cov)) {cov <- cov[subset, , drop=FALSE]}
     if (!is.null(matchset)) {matchset <- matchset[subset]}
   }
-  if(sum(is.na(y))>0) {warning("response vector y includes NAs, subjects are excluded")}
+  if(any(is.na(y))) {warning("response vector y includes NAs, subjects are excluded")}
   if(ncol(SNPtoGene)!=2){
     stop("mapping matrix SNPtoGene should have two columns")}
-  if(sum(is.na(SNPtoGene[,2]))>0) {stop("mapping matrix SNPtoGene includes NAs")}
+  if(any(is.na(SNPtoGene[,2]))) {stop("mapping matrix SNPtoGene includes NAs")}
   if(is.null(colnames(x))){
     warning("SNP matrix x has no colnames, not comparable to mapping matrix SNPtoGene")}
-  if((sum(SNPtoGene[,1]%in%colnames(x)==FALSE)>0)){
+  if(any(!(SNPtoGene[,1]%in%colnames(x)))){
     stop("different names of SNPs in SNP matrix x and mapping matrix SNPtoGene")}
-  if((sum(colnames(x)%in%SNPtoGene[,1]==FALSE)>0)){
+  if(any(!(colnames(x)%in%SNPtoGene[,1]))){
     stop("different names of SNPs in SNP matrix x and mapping matrix SNPtoGene")}
   if(nrow(x)!=length(y)){
     stop("length of response vector y should equal the number of rows of SNP matrix x")}
@@ -31,34 +31,26 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   if(!is.null(matchset)){
     if(length(y)!=length(matchset))
       {stop("length of response vector y should equal the length of the  matchset vector")}
-    if(sum(is.na(matchset))>0) {warning("matchset vector includes NA, subjects are excluded")}
+    if(any(is.na(matchset))) {warning("matchset vector includes NA, subjects are excluded")}
     resp.match <- data.frame(y=y,matchset=matchset)
     matchnr.cases <- resp.match[resp.match[,1]==1,2]
     matchnr.controls <- resp.match[resp.match[,1]==0,2]
     cases.match <- lapply(seq_along(matchnr.cases), function(i){
       if(!is.na(matchnr.cases[i])){
         z <- which(matchnr.controls==matchnr.cases[i])
-        if(length(z)<1){
-          z.miss <- FALSE
-        }else{
-          z.miss <- TRUE
-        }
+        z.miss <- length(z)>=1
         z.miss
       }
     })
-    if(sum(unlist(cases.match)==FALSE)>0) {warning("not every case has controls")}
+    if(any(!unlist(cases.match))) {warning("not every case has controls")}
     control.match <- lapply(seq_along(matchnr.controls), function(i){
       if(!is.na(matchnr.controls[i])){
         z <- which(matchnr.cases==matchnr.controls[i])
-        if(length(z)<1){
-          z.miss <- FALSE
-        }else{
-          z.miss <- TRUE
-        }
+        z.miss <- length(z)>=1
         z.miss
       }
     })
-    if(sum(unlist(control.match)==FALSE)>0) {warning("not every control belongs to a case")}
+    if(any(!unlist(control.match))) {warning("not every control belongs to a case")}
   }
   nrsnp <- dim(x)[2]
   n <- length(y)
@@ -68,7 +60,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
       stop("package 'snowfall' must be installed and loaded, otherwise parallelization cannot be performed")
     }else{
       require("snowfall")
-      if(!sfIsRunning()) sfInint(parallel=TRUE)
+      if(!sfIsRunning()) sfInit(parallel=TRUE)
     }
   }
   if(multicore){
@@ -85,23 +77,24 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
     if(!is.null(cov) | !is.null(matchset)){
       warning("missing formula, Cochran-Armitage Trend Test is performed")
     }
-    valmax <- max(unique(x))
-    valmin <- min(unique(x))
+    unique_snps <- unique(x)
+    valmax <- max(unique_snps)
+    valmin <- min(unique_snps)
     tsnps <- t(x)
     if(parallel){
-      sfLibrary(scrime)
+      sfLibrary("scrime", character.only=TRUE)
       sfExport("valmax","valmin","tsnps")
     }
-    cases <- rowTables(tsnps[,y==1],levels=valmin:valmax)
-    controls <- rowTables(tsnps[,y==0],levels=valmin:valmax)
+    cases <- rowTables(tsnps[, y==1, drop=FALSE],levels=valmin:valmax)
+    controls <- rowTables(tsnps[, y==0, drop=FALSE],levels=valmin:valmax)
     p_value <- as.matrix(rowCATTs(cases,controls)$rawp)
     colnames(p_value) <- "p_value"
     perrfunc <- function(permut){
       if(trace) {cat("permutation",permut,"\n")}
       set.seed(seed[permut])
       permy <- sample(y)
-      casesperm <- rowTables(tsnps[,permy==1],levels=valmin:valmax)
-      controlsperm <- rowTables(tsnps[,permy==0],levels=valmin:valmax)
+      casesperm <- rowTables(tsnps[, permy==1, drop=FALSE],levels=valmin:valmax)
+      controlsperm <- rowTables(tsnps[, permy==0, drop=FALSE],levels=valmin:valmax)
       pperr <- as.matrix(rowCATTs(casesperm,controlsperm)$rawp)
       return(pperr)
     }
@@ -115,7 +108,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
       sfExport("formula","snpvecnames")
       if(!is.null(matchset)){
         sfExport("n","matchset")
-        sfLibrary(Epi)
+        sfLibrary("Epi", character.only=TRUE)
       }
     }
 ##### logistic regression without covariables
@@ -134,8 +127,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           fit.res <- summary(fit)$coefficients
           fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
           names(fit.res) <- snpvecnames[i]
-          gc()
-          gc()
           fit.res
         }
         perrfunc <- function(permut){
@@ -148,8 +139,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
             fit <- glm(new.form, binomial, dat)
             fit.res <- summary(fit)$coefficients
             fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
-            gc()
-            gc()
             fit.res
           })
           names(pperr) <- snpvecnames
@@ -168,8 +157,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
           p <- 1 - pchisq((coef/se)^2, 1)
           fit.res <- p[length(p)]    
-          gc()
-          gc()
           fit.res
         }
         perrfunc <- function(permut){
@@ -187,8 +174,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
             se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
             p <- 1 - pchisq((coef/se)^2, 1)
             fit.res <- p[length(p)]
-            gc()
-            gc()
             fit.res
           })
           names(pperr) <- snpvecnames
@@ -220,8 +205,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           fit.res <- summary(fit)$coefficients
           fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
           names(fit.res) <- snpvecnames[i]
-          gc()
-          gc()
           fit.res
         }
         perrfunc <- function(permut){
@@ -234,8 +217,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
             fit <- glm(new.form, binomial, dat)
             fit.res <- summary(fit)$coefficients
             fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
-            gc()
-            gc()
             fit.res
           })
           names(pperr) <- snpvecnames
@@ -254,8 +235,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
           p <- 1 - pchisq((coef/se)^2, 1)
           fit.res <- p[length(p)]
-          gc()
-          gc()
           fit.res
         }
         perrfunc <- function(permut){
@@ -273,8 +252,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
             se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
             p <- 1 - pchisq((coef/se)^2, 1)
             fit.res <- p[length(p)]
-            gc()
-            gc()
             fit.res
           })
           names(pperr) <- snpvecnames
@@ -337,7 +314,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   pgenperr <- lapply(p_valuesperr, function(x){
     p_list <- x
     minpper <- apply(matrix(seq_along(genes)), MARGIN=1, FUN=function(i){
-      snpnames <- SNPtoGene[which(SNPtoGene[,2]==genes[i]),1]
+      snpnames <- SNPtoGene[which(SNPtoGene[,2]==genes[i]), 1]
       minpgenperr <- min(p_list[snpnames,],na.rm=TRUE)
       minpgenperr
     })
@@ -346,7 +323,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   colnames(pgenperr) <- c(1:permutation)
   rownames(pgenperr) <- genes
   minp <- double(length(pgen))
-  for(i in 1:length(pgen)){
+  for(i in seq_along(pgen)){
     minp[i] <- mean(pgenperr[i,]<=pgen[i])    
   }
   names(minp) <- genes

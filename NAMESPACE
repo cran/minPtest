@@ -5,4 +5,3 @@ S3method(plot,minPtest)
 S3method(print,summary.minPtest)
 S3method(print,generateSNPs)
 
-

@@ -1,5 +1,7 @@
 plot.minPtest <-
-function(x, level=0.05, lambda=1, gene.name=FALSE, ...){
+function(x, level=0.05, lambda=1, gene.name=FALSE, sigPch=pch, nonsigPch=pch, pch=20, sigLty=lty, nonsigLty=lty, lty=1, sigCol=col, nonsigCol=col, col=NULL, xlab="SNP", ...){
+  if(is.null(sigCol)) sigCol <- "red"
+  if(is.null(nonsigCol)) nonsigCol <- "black"
   psnp <- x$psnp
   minp <- x$minp
   if(length(which(minp[,"minP"]==0))>0){
@@ -24,12 +26,12 @@ function(x, level=0.05, lambda=1, gene.name=FALSE, ...){
   gensnp.sort <- do.call(rbind,gensnp)
   log.psnp <- -log(gensnp.sort[,"p_value"],10)
   par(mar=c(5,4,4,5))
-  plot(x=c(0,x$nrsnp),y=c(0,max(log.psnp)), xlab="SNP", ylab=expression(-log[10](psnp)),xaxt="n",col="white", ...)
+  plot(x=c(0,x$nrsnp),y=c(0,max(log.psnp)), xlab=xlab, ylab=expression(-log[10](psnp)),xaxt="n",type="n", ...)
   for(i in 1:x$nrsnp){
     if(gensnp.sort[i,"p.adjust"]<=level){
-      points(i,log.psnp[i], pch=20, col="red", ...)
+      points(i,log.psnp[i], pch=sigPch, col=sigCol, ...)
     }else{
-      points(i,log.psnp[i], pch=20, ...)
+      points(i,log.psnp[i], pch=nonsigPch, col=nonsigCol, ...)
     }
   }
   minp.padj <- cbind(minp,p.adj.minp)
@@ -42,11 +44,11 @@ function(x, level=0.05, lambda=1, gene.name=FALSE, ...){
   middle <- median(x1:x2)
   for(i in 1:(length(gene.size))){
     par(new=TRUE)
-    plot(x=c(0,x$nrsnp),y=c(0,max(log.minp)), xlab="", ylab="",xaxt="n",col="white", yaxt="n", ...)
+    plot(x=c(0,x$nrsnp),y=c(0,max(log.minp)), xlab="", ylab="",xaxt="n",type="n", yaxt="n", ...)
     if(minp.padj[i,"p.adjust"]<=level){
-      lines(c(x1,x2),c((log.minp[i])*lambda,(log.minp[i])*lambda),col="red", ...)
+      lines(c(x1,x2),c((log.minp[i])*lambda,(log.minp[i])*lambda),col=sigCol, lty=sigLty, ...)
     }else{
-      lines(c(x1,x2),c((log.minp[i])*lambda,(log.minp[i])*lambda), ...)
+      lines(c(x1,x2),c((log.minp[i])*lambda,(log.minp[i])*lambda), col=nonsigCol, lty=nonsigLty, ...)
     }
     x1 <- x2+1
     x2 <- x2+gene.size[i+1]
@@ -65,5 +67,3 @@ function(x, level=0.05, lambda=1, gene.name=FALSE, ...){
   }
 box(...)
 }
-
-
