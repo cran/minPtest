@@ -1,0 +1,14 @@
+a93d2a9bc9e49cc53ba0b02f4a8cb947 *DESCRIPTION
+8f02eae8b132f43abcdf4687aa2ab274 *NAMESPACE
+5f0b275fc9aae641d313af9cb1e87e3d *R/generateSNPs.R
+88f39324727e13fea54f07b52d8e8917 *R/minPtest.R
+b738558c6e577ea1837a21cdf684c0b0 *R/plot.minPtest.R
+ec543d7ad03276f99f7a9062b4c41ca9 *R/summary.minPtest.R
+d19185be0ef09227e46b0e2efc531254 *inst/doc/plots/plot_minPtest1_object1.pdf
+ade9c060dc238a770328206e07bd848e *inst/doc/plots/plot_minPtest2_object2.pdf
+9b1e5cb62ab326afc647e179afaac641 *inst/doc/vignette.Snw
+721c9450af9c7ae38acb41da1a6c423d *inst/doc/vignette.pdf
+104d75c9b86ac4ad3041356dd0e8cee1 *man/generateSNPs.Rd
+f6f20d61b72a99234ecec9ba9e34905b *man/minPtest.Rd
+907b50ed61f9e7c3b734ccb81f42d11f *man/plot.minPtest.Rd
+22bd6c962359e984fbc395b6b4467da9 *man/summary.minPtest.Rd

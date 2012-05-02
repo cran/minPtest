@@ -68,7 +68,7 @@ function(n,gene.no,block.no,block.size,p.same,p.different=NULL,p.minor,n.sample,
   })
   Genes <- as.vector(do.call(cbind, g))
   y <- as.vector(sim.data[,"response"])
-  x <- sim.data[,which(colnames(sim.data)=="SNP1"):which(colnames(sim.data)==paste("SNP",snp.no,sep=""))]
+  x <- sim.data[,SNPs]	
   SNPtoGene <- cbind(SNPs,Genes)
   cov <- cbind(sim.data[,"cov.continuous"],sim.data[,"cov.binary"])
   colnames(cov) <- c("cov.continuous","cov.binary")

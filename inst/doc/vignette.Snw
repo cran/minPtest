@@ -1,6 +1,6 @@
 % \VignetteIndexEntry{An R package for a gene region-level testing procedure for SNP data, using the min P test resampling approach}
 % \VignetteKeyword{min P test}
-% \VignetteKeyword{single nucleotide polimorphisms}
+% \VignetteKeyword{single nucleotide polymorphisms}
 % \VignetteKeyword{permutation-based resampling}
 % \VignetteKeyword{simulated SNP data}
 
@@ -28,6 +28,7 @@
 \date{\today}
 
 
+\usepackage{Sweave}
 \begin{document}
 
 \maketitle
@@ -284,12 +285,11 @@ $snp.p.values
 \end{verbatim}
 
 \subsection{Plotting permutation-based p-values for each candidate gene and marginal p-values for the SNPs located on these genes }\label{plot}
-The \texttt{plot} function is used to present the information provided by \texttt{summary} graphically, i.e. to display the permutation-based p-values for each candidate genes and the marginal p-values for each SNP located on these genes in a graphical way. The \texttt{plot} function plots $(-\log_{10})$ transformed marginal p-values of each SNP in a basic scatterplot. In addition, horizontal lines of the $(-(\text{lambda})\cdot\log_{10})$ transformed permutation-based p-values of each gene covering all SNPs located on that gene are plotted. The plot is indicated two separated y-axes ($(-\log_{10}(\text{psnp}))$ on left hand side and\\
-$(-(\text{lambda})\cdot\log_{10}(\text{minp}))$ on the right hand side). \texttt{psnp} is the matrix of marginal trend p-values and \texttt{minp} is the matrix of permutation-based p-values from \texttt{minPtest}, see \ref{minP1} and \ref{minP2}. \texttt{lambda} is used to scale the y-axis for the log-transformed permutation-based p-values. After the Bonferroni correction depending on the \texttt{level}, default is 0.05, significant genes and SNPs are by default highlighted in red, i.e. each gene line and each SNP point with permutation-based p-value and marginal p-value smaller than or equal to the \texttt{level}, is highlighted in red. The plot method allows to compare the permutation-based p-values of each gene with marginal p-values of each SNP located on these genes. The y-axes are $(-\log_{10})$ transformed to obtain a disposition as a Manhattan plot for the points of the marginal p-values of the SNPs.
+The \texttt{plot} function is used to present the information provided by \texttt{summary} graphically, i.e. to display the permutation-based p-values for each candidate gene and the marginal p-values for each SNP located on these genes in a graphical way. The function plots either $(-\log_{10})$ transformed permutation-based p-values for each gene or $(-\log_{10})$ transformed marginal p-values for each SNP in a basic scatterplot using the argument \texttt{type="gene"} (default) or \texttt{"SNP"}. The y-axis is $(-\log_{10})$ transformed to obtain a disposition as a Manhattan plot for the points of the marginal p-values of the SNPs. Furthermore, an alternative given by the function is to display the marginal p-values for each SNP and the transformed permutation-based p-values for each gene in a combined plot using the argument \texttt{type="both"}. Therefore, $(-\log_{10})$ transformed marginal p-values for each SNP are plotted as points. In addition, horizontal lines of $(-\text{\texttt{lambda}}*\log_{10})$ transformed permutation-based p-values of each gene, covering all SNPs located on that gene, are plotted. The composed plot is indicated by two separated y-axes $(-\log_{10}(\texttt{psnp}))$ at left hand side and $(-\texttt{lambda}*\log_{10}(\texttt{minp}))$ at the right hand side). \texttt{psnp} is a matrix of marginal trend p-values and \texttt{minp} is a matrix of permutation-based p-values from \texttt{minPtest} object, see \ref{minP1} and \ref{minP2}. \texttt{lambda} is used to scale the y-axis for the log-transformed permutation-based p-values. After Bonferroni correction depending on the \texttt{level}, default 0.05, significant genes and SNPs are by default highlighted in red. I.e. not depending on the used type of plot, each gene or/and each SNP with permutation-based p-value or/and marginal p-value smaller than or equal to the \texttt{level}, is highlighted in red.
 
 \subsubsection{Plotting permutation-based and marginal p-values from \ref{minP1}}\label{plot.ex1}
 
-We display the $(-0.5\cdot\log_{10})$ transformed permutation-based p-values for each candidate gene and the $(-\log_{10})$ transformed marginal p-values for each SNP located on the genes of \ref{minP1} with a scaled y-axis for the permutation-based p-values, using the \texttt{plot} function.
+We display the combined plot of the resulting $(-0.5\cdot\log_{10})$ transformed permutation-based p-values for each candidate gene and $(-\log_{10})$ transformed marginal p-values for each SNP located on the genes from \ref{minP1} with a scaled y-axis for the permutation-based p-values, using the \texttt{plot} function and argument \texttt{type="both"}.
 
 \begin{figure}[t!]
   \centering
@@ -300,7 +300,7 @@ We display the $(-0.5\cdot\log_{10})$ transformed permutation-based p-values for
  \end{figure}
 
 \begin{verbatim}
-> plot(minPtest.object1, lambda=0.5, gene.name=TRUE)
+> plot(minPtest.object1, type="both", lambda=0.5, gene.name=TRUE)
 \end{verbatim}
 
 Figure \ref{Fig1} shows horizontal lines for each $(-0.5\cdot\log_{10})$ transformed permutation-based p-value of the candidate genes and dots for each $(-\log_{10})$ transformed marginal p-value of the SNPs located on these genes. The horizontal line of gene G2 and one dot of a SNP (SNP54, see \texttt{summary} in \ref{minP1}) are highlighted in red, as their p-values are smaller than or equal to \texttt{level=0.05} after Bonferroni correction.\\
@@ -317,14 +317,13 @@ It should be stressed that, for real data, the plot above would usually contain 
  \end{figure}
 
 \subsubsection{Plotting permutation-based and marginal p-values from \ref{minP2} with a break in the first block of each gene}\label{plot.ex2}
-We display the $(-0.5\cdot\log_{10})$ transformed permutation-based p-values for each candidate gene and the $(-\log_{10})$ transformed marginal p-values for each SNP located on these genes from \ref{minP2} with a scaled y-axis for the permutation-based p-values, using the \texttt{plot} function. The difference to \ref{minP1} is the break within the first block due to the modification of the probability for neighborhood SNPs of SNP-position 6 from 0.9 to 0.5 in each gene, see \ref{exa2}.
+We display the combined plot of the resulting $(-0.5\cdot\log_{10})$ transformed permutation-based p-values for each candidate gene and $(-\log_{10})$ transformed marginal p-values for each SNP located on these genes from \ref{minP2} with a scaled y-axis for the permutation-based p-values, using the \texttt{plot} function and argument \texttt{type="both"}. The difference to \ref{minP1} is the break within the first block due to the modification of the probability for neighborhood SNPs of SNP-position 6 from 0.9 to 0.5 in each gene, see \ref{exa2}.
 
 \begin{verbatim}
-> plot(minPtest.object2, lambda=0.5, gene.name=TRUE)
+> plot(minPtest.object2, type="both", lambda=0.5, gene.name=TRUE)
 \end{verbatim}
 
 
 Figure \ref{Fig2} shows horizontal lines for each $(-0.5\cdot\log_{10})$ transformed permutation-based p-value of the candidate genes, as well as dots for each $(-\log_{10})$ transformed marginal p-value of the SNPs located on these genes. Compared to Figure \ref{Fig1}, only the horizontal line of gene G1 is highlighted in red as the Bonferroni corrected permutation-based p-values is smaller than the default level and, as no Bonferroni corrected marginal p-value is smaller or equal than level, no dots of the SNP are highlighted in red, see also the list items from the \texttt{summary} function in \ref{minP2}.
 
 \end{document}
-

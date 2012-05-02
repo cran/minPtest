@@ -20,14 +20,6 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   if(nrow(x)!=length(y)){
     stop("length of response vector y should equal the number of rows of SNP matrix x")}
   snp.miss <- sum(is.na(x))
-  if(snp.miss==0){
-    if(length(unique(as.factor(x)))!=3){
-      warning("SNP matrix x should contain three features")}
-  }
-  if(snp.miss!=0){
-    if(length(unique(as.factor(x)))!=4){
-      warning("SNP matrix x should contain three features")}
-  }
   if(!is.null(matchset)){
     if(length(y)!=length(matchset))
       {stop("length of response vector y should equal the length of the  matchset vector")}
@@ -77,6 +69,14 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
     if(!is.null(cov) | !is.null(matchset)){
       warning("missing formula, Cochran-Armitage Trend Test is performed")
     }
+    if(snp.miss==0){
+      if(length(unique(as.factor(x)))!=3){
+        warning("SNP matrix x should contain three features")}
+    }
+    if(snp.miss!=0){
+      if(length(unique(as.factor(x)))!=4){
+        warning("SNP matrix x should contain three features")}
+    }
     unique_snps <- unique(x)
     valmax <- max(unique_snps)
     valmin <- min(unique_snps)
@@ -120,10 +120,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
 #unconditional logistic regression without covariables
       if(is.null(matchset)){
         method <- "unconditional logistic regression (glm)"
-        if(parallel){ sfExport("dat") }
+        actual.frame <- dat[,colnames(dat)[1], drop=FALSE]
+        if(parallel){ sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
-          new.form <- as.formula(paste(as.character(formula)[2],snpvecnames[i], sep = "~"))
-          fit <- glm(new.form, binomial, dat)
+          actual.frame$SNP <- dat[,snpvecnames[i]]
+          new.form <- as.formula(paste(as.character(formula)[2],"SNP", sep = "~"))
+          fit <- glm(new.form, binomial, actual.frame)
           fit.res <- summary(fit)$coefficients
           fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
           names(fit.res) <- snpvecnames[i]
@@ -133,10 +135,11 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           if(trace) {cat("permutation", permut , "\n")}
           set.seed(seed[permut])
           permy <- sample(y)
-          dat$permy <- permy
+          actual.frame$permy <- permy
           pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
-            new.form <- as.formula(paste("permy", snpvecnames[i], sep = "~"))
-            fit <- glm(new.form, binomial, dat)
+            actual.frame$SNP <- dat[,snpvecnames[i]]
+            new.form <- as.formula(paste("permy", "SNP", sep = "~"))
+            fit <- glm(new.form, binomial, actual.frame)
             fit.res <- summary(fit)$coefficients
             fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
             fit.res
@@ -149,14 +152,17 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
 #conditional logistic regression without covariables
         method <- "conditional logistic regression"
         dat$matchset <- matchset
-        if(parallel){ sfExport("dat") }
+        actual.frame <- dat[,c(colnames(dat)[1],"matchset")]
+        if(parallel){ sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
-          new.form <- as.formula(paste(as.character(formula)[2],snpvecnames[i], sep = "~"))
-          fit <- clogistic(new.form, strata=matchset, data=dat)
+          actual.frame$SNP <- dat[,snpvecnames[i]]
+          new.form <- as.formula(paste(as.character(formula)[2],"SNP", sep = "~"))
+          fit <- clogistic(new.form, strata=matchset, data=actual.frame)
           coef <- Epi:::coef.clogistic(fit)
           se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
           p <- 1 - pchisq((coef/se)^2, 1)
-          fit.res <- p[length(p)]    
+          fit.res <- p[length(p)]
+          names(fit.res) <- snpvecnames[i]
           fit.res
         }
         perrfunc <- function(permut){
@@ -165,11 +171,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           perm <- sample(n)
           permy <- y[perm]
           permmatch <- matchset[perm]
-          dat$permy <- permy
-          dat$permmatch <- permmatch
+          actual.frame$permy <- permy
+          actual.frame$permmatch <- permmatch
           pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
-            new.form <- as.formula(paste("permy", snpvecnames[i], sep = "~"))
-            fit <- clogistic(new.form, strata=permmatch, data=dat)
+            actual.frame$SNP <- dat[,snpvecnames[i]]
+            new.form <- as.formula(paste("permy", "SNP", sep = "~"))
+            fit <- clogistic(new.form, strata=permmatch, data=actual.frame)
             coef <- Epi:::coef.clogistic(fit)
             se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
             p <- 1 - pchisq((coef/se)^2, 1)
@@ -198,10 +205,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
 #unconditional logistic regression with covariables
       if(is.null(matchset)){
         method <- "unconditional logistic regression (glm)"
-        if(parallel) { sfExport("dat") }
+        actual.frame <- dat[,c(colnames(dat)[1], colnames(cov))]
+        if(parallel) { sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
-          new.form <- as.formula(paste(deparse(formula),snpvecnames[i], sep = "+"))
-          fit <- glm(new.form, binomial, dat)
+          actual.frame$SNP <- dat[,snpvecnames[i]]
+          new.form <- as.formula(paste(deparse(formula),"SNP", sep = "+"))
+          fit <- glm(new.form, binomial, actual.frame)
           fit.res <- summary(fit)$coefficients
           fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
           names(fit.res) <- snpvecnames[i]
@@ -211,10 +220,11 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           if(trace) {cat("permutation" , permut, "\n")}
           set.seed(seed[permut])
           permy <- sample(y)
-          dat$permy <- permy
+          actual.frame$permy <- permy
           pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
-            new.form <- as.formula(paste(perr.formula, snpvecnames[i], sep = "+"))
-            fit <- glm(new.form, binomial, dat)
+            actual.frame$SNP <- dat[,snpvecnames[i]]
+            new.form <- as.formula(paste(perr.formula, "SNP", sep = "+"))
+            fit <- glm(new.form, binomial, actual.frame)
             fit.res <- summary(fit)$coefficients
             fit.res <- fit.res[dim(fit.res)[1],dim(fit.res)[2]]
             fit.res
@@ -227,14 +237,17 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
 # conditional logistic regression with covariables
         method <- "conditional logistic regression (clogistic)"
         dat$matchset <- matchset
-        if(parallel) { sfExport("dat") }
+        actual.frame <- dat[,c(colnames(dat)[1], colnames(cov), "matchset")]
+        if(parallel) { sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
-          new.form <- as.formula(paste(deparse(formula),snpvecnames[i], sep = "+"))
-          fit <- clogistic(new.form, strata=matchset, data=dat)
+          actual.frame$SNP <- dat[,snpvecnames[i]]
+          new.form <- as.formula(paste(deparse(formula), "SNP", sep = "+"))
+          fit <- clogistic(new.form, strata=matchset, data=actual.frame)
           coef <- Epi:::coef.clogistic(fit)
           se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
           p <- 1 - pchisq((coef/se)^2, 1)
           fit.res <- p[length(p)]
+          names(fit.res) <- snpvecnames[i]
           fit.res
         }
         perrfunc <- function(permut){
@@ -243,11 +256,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
           perm <- sample(n)
           permy <- y[perm]
           permmatch <- matchset[perm]
-          dat$permy <- permy
-          dat$permmatch <- permmatch
+          actual.frame$permy <- permy
+          actual.frame$permmatch <- permmatch
           pperr <- apply(matrix(seq_along(snpvecnames)), MARGIN=1, function(i) {
-            new.form <- as.formula(paste(perr.formula, snpvecnames[i], sep = "+"))
-            fit <- clogistic(new.form, strata=permmatch, data=dat)
+            actual.frame$SNP <- dat[,snpvecnames[i]]
+            new.form <- as.formula(paste(perr.formula, "SNP", sep = "+"))
+            fit <- clogistic(new.form, strata=permmatch, data=actual.frame)
             coef <- Epi:::coef.clogistic(fit)
             se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
             p <- 1 - pchisq((coef/se)^2, 1)
