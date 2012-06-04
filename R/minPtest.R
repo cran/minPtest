@@ -78,8 +78,8 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
         warning("SNP matrix x should contain three features")}
     }
     unique_snps <- unique(x)
-    valmax <- max(unique_snps)
-    valmin <- min(unique_snps)
+    valmax <- max(unique_snps, na.rm=TRUE)
+    valmin <- min(unique_snps, na.rm=TRUE)
     tsnps <- t(x)
     if(parallel){
       sfLibrary("scrime", character.only=TRUE)
