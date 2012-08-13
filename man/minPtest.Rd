@@ -10,7 +10,8 @@ Permutation-based p-values estimation via min P test, a gene region-level summar
 \usage{
 minPtest(y, x, SNPtoGene, formula = NULL, cov = NULL, matchset = NULL,
          permutation = 1000, seed = NULL, subset = NULL,
-         multicore = FALSE, parallel = FALSE, trace = FALSE)
+         multicore = FALSE, parallel = FALSE, trace = FALSE,
+         aggregation.fun = min, ...)
 }
 \arguments{
   \item{y}{
@@ -49,6 +50,12 @@ logical value indicates whether computation should be performed in parallel on a
   \item{trace}{
 logical value indicating whether progress in estimation should be indicated by printing the number of permutation that is currently used. (ignored if running in parallel via \pkg{snowfall}).
 }
+\item{aggregation.fun}{
+  function that is used to combine the trend p-values over multiple loci within a gene region. By default the minimum  (\code{"min"}) is applied to obtain candidate gene region-level summaries. Any other function to integrate the p-values into one single test statistic can be used, e.g., \code{median} or different functions designed by the user.
+}
+\item{...}{
+Further arguments for \code{aggregation.fun}. In case of \code{NA/NaN} within the evaluated marginal trend p-values for the SNPs from the original data (\code{psnp}) or within the permuted trend p-values in the permutation samples (\code{psnpperm}), \code{na.rm=TRUE} has to be specified.
+}
 }
 \details{
 The idea of the gene region-level summary, using the min P test procedure (Westfall and Young, 1993; Westfall et al., 2002; Chen et al., 2006), is to identify candidate genes by assessing the statistical significance of the smallest p-trend from a set of SNPs (single nucleotide polymorphisms) within each gene region comparing cases and controls by permutation-based resampling methods. A SNP, i.e. genetic variation occurring at a single base pair position in the genome, can take three possible values (genotypes); either there is no SNP variant in comparison to some reference coding (homozygous reference (0)) or the SNP variant occurs on one of the two base pair positions (heterozygous (1)), or both base pairs have a variant comparing to the reference coding. \pkg{minPtest} permits to include, instead of the genotypes 0, 1 and 2, also combined carrier SNPs, e.g. coding 0 and 1 (1 + 2).
@@ -77,7 +84,7 @@ An object of class 'minPtest', which is a list containing the following componen
 \item{p.adj.minp}{\code{nrgene * 1} matrix of corrected permutation-based p-values via Bonferroni correction method for each candidate gene.}
 \item{psnp}{\code{nrsnp * 1} matrix of marginal trend p-values for each SNP from the original data set.}
 \item{p.adj.psnp}{\code{nrsnp * 1} matrix of corrected marginal trend p-values via Bonferroni correction method for each SNP from the original data set.}
-\item{psnpperm}{\code{nrsnp * n.permute} matrix of permutated trend p-values for each SNP in each permutation step.}
+\item{psnpperm}{\code{nrsnp * n.permute} matrix of permuted trend p-values for each SNP in each permutation step.}
 \item{zgen}{\code{nrgene * 1} matrix of min P test statistics for each candidate gene from the original data set.}
 \item{zgenperm}{\code{nrgene * n.permute} matrix of permuted min P test statistics for each candidate gene in each permutation step.}
 \item{n}{number of subjects in the original data set.}
@@ -132,6 +139,6 @@ minPtest.object <- minPtest(y=sim1$y, x=sim1$x, SNPtoGene=sim1$SNPtoGene,
 	seed=seed1)
 
 }
-\keyword{single nucleotide polimorphisms}
+\keyword{single nucleotide polymorphisms}
 \keyword{min P test}
 \keyword{permutation-based resampling}

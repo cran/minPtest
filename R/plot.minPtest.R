@@ -16,7 +16,7 @@ function(x, type=c("gene", "SNP", "both") ,level=0.05, lambda=1, gene.name=FALSE
   log.minp <- -log(minp[,"minP"],10)
   ## permutation-based p-values only
   if(type=="gene"){
-    plot(x=c(1,x$nrgene), y=c(0,max(log.minp)), xlab=xlab, ylab=expression(-log[10](minp)),xaxt="n",type="n",  ...)
+    plot(x=c(1,x$nrgene), y=c(0,max(log.minp)), xlab=xlab, ylab=expression(-log[10](minp)),xaxt="n",type="n", ...)
     for(i in 1:x$nrgene){
       if(minp.padj[i,"p.adjust"]<=level){
         points(i,log.minp[i], pch=sigPch, col=sigCol, ...)

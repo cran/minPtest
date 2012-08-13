@@ -153,7 +153,7 @@ Number of permutations: 1000
 \end{verbatim}
 
 Above, you can see the display returned by the \texttt{print} function. It prints the method which was used for the computation of the marginal and permuted trend p-values, the number of subjects, the number of genes, the number of SNPs used for the computation, the number of missings in the SNPs and the number of permutations used to compute the permuted distribution of the minimum of the ordered p-values from the marginal test of each SNP.\\
-The \texttt{minPtest} function returns a list consisting of a matrix of permutation-based p-values of the min P test for each candidate gene, a matrix of corrected permutation-based p-values via Bonferroni correction method for each candidate gene, a matrix of marginal trend p-values for each SNP from the original data set, a matrix of corrected marginal trend p-values via Bonferroni correction method for each SNP from the original data set, a matrix of permutated trend p-values for each SNP in each permutation step, etc.\\
+The \texttt{minPtest} function returns a list consisting of a matrix of permutation-based p-values of the min P test for each candidate gene, a matrix of corrected permutation-based p-values via Bonferroni correction method for each candidate gene, a matrix of marginal trend p-values for each SNP from the original data set, a matrix of corrected marginal trend p-values via Bonferroni correction method for each SNP from the original data set, a matrix of permuted trend p-values for each SNP in each permutation step, etc.\\
 The main output of the \texttt{minPtest} call is the matrix of permutation-based p-values of the min P test for each candidate gene.
 
 \begin{verbatim}

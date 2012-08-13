@@ -1,5 +1,6 @@
 minPtest <-
-function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed=NULL,subset=NULL,multicore=FALSE,parallel=FALSE,trace=FALSE){
+function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed=NULL,subset=NULL,multicore=FALSE,parallel=FALSE,trace=FALSE,
+         aggregation.fun=min, ...){
   call <- match.call()
   if (!is.null(subset)) {
     y <- y[subset]
@@ -319,7 +320,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   genes <- unique(SNPtoGene[,2])
   pgen <- lapply(seq_along(genes), function(i){
     snpnames <- SNPtoGene[which(SNPtoGene[,2]==genes[i]),1]
-    minpgen <- min(p_value[snpnames,],na.rm=TRUE)
+    minpgen <- aggregation.fun(p_value[snpnames,], ...)
     minpgen
   })
   names(pgen) <- genes
@@ -329,7 +330,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
     p_list <- x
     minpper <- apply(matrix(seq_along(genes)), MARGIN=1, FUN=function(i){
       snpnames <- SNPtoGene[which(SNPtoGene[,2]==genes[i]), 1]
-      minpgenperr <- min(p_list[snpnames,],na.rm=TRUE)
+      minpgenperr <- aggregation.fun(p_list[snpnames,], ...)
       minpgenperr
     })
   })
