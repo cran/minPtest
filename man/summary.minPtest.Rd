@@ -18,15 +18,15 @@ an object of class \code{minPtest}, i.e. the output of a \code{\link{minPtest}} 
 a numeric threshold that specifies which genes are shown in the summary, i.e. the genes with adjusted permutation-based p-values smaller than or equal to that threshold are printed. Default is 0.05.
 }
 \item{sign.SNP}{
-  a logical value; if TRUE, print, in addition to the genes selected by a \code{level}, the SNPs with adjusted marginal p-values smaller than or equal to the \code{level} (same as for genes) located at these genes. Default is FALSE, all SNP located on these genes, selected according to the \code{level}, are shown. Default is FALSE.
+  a logical value; if TRUE, print, in addition to the genes selected by a \code{level}, the SNPs with adjusted marginal p-values smaller than or equal to the \code{level} (same as for genes) located on these genes. Default is FALSE, all SNP located on these genes, selected according to the \code{level}, are shown. Default is FALSE.
 }
 \item{...}{Further arguments for the \code{summary} method. Not used.}
 }
 \details{
-Prints the genes with adjusted permutation-based p-value smaller than or equal to \code{level}, the corresponding permutation-based p-values, the adjusted permutation-based p-values and the SNPs located on these genes, either all SNPs or SNPs selected by the \code{level}, sorted by the adjusted marginal p-values, with marginal p-values and adjusted marginal p-values.
+Prints the genes with adjusted permutation-based p-value smaller than or equal to a \code{level}, the corresponding permutation-based p-values, the adjusted permutation-based p-values and the SNPs located on these genes, either all SNPs or SNPs selected by the \code{level}, sorted by the adjusted marginal p-values, with marginal p-values and adjusted marginal p-values.
 }
 \value{
-\code{summary.minPtest} returns a list. Each item characterizes a gene, selected according to a code{level}, list items are named by means of these genes. Each gene item contains a list of data.frames, a data.frame for the permutation-based p-values and adjusted permutation-based p-values for this gene and a data.frame for the marginal p-values and adjusted marginal p-values for the SNPs located on that gene, either all SNPs or SNPs selected by the \code{level}.
+\code{summary.minPtest} returns a list. Each item characterizes a gene, selected according to a \code{level}, list items are named by means of these genes. Each gene item contains a list of data frames, a data frame for the permutation-based p-values and adjusted permutation-based p-values for this gene and a data frame for the marginal p-values and adjusted marginal p-values for the SNPs located on that gene, either all SNPs or SNPs selected by the \code{level}.
 }
 \author{
 Stefanie Hieke \email{hieke@fdm.uni-freiburg.de}

@@ -1,7 +1,9 @@
 minPtest <-
-function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed=NULL,subset=NULL,multicore=FALSE,parallel=FALSE,trace=FALSE,
-         aggregation.fun=min, ...){
+function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
+         seed=NULL,subset=NULL,multicore=FALSE,parallel=FALSE,trace=FALSE,
+         aggregation.fun=min,adj.method=c("bonferroni","holm","hochberg","hommel","BH","BY","fdr","none"), ...){
   call <- match.call()
+  adj.method = match.arg(adj.method)
   if (!is.null(subset)) {
     y <- y[subset]
     x <- x[subset, , drop=FALSE]
@@ -57,10 +59,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
     }
   }
   if(multicore){
-    if(!require("multicore")){
-      stop("package 'multicore' must be installed and loaded, otherwise parallelization cannot be performed")
-    }else{
-      require("multicore")}}
+    try(library("parallel"), silent=TRUE)
+       if("try-error" %in% class(try(library(parallel), silent=TRUE))){
+      if(!require("multicore")){
+        stop("package 'parallel' or package 'multicore' must be installed and loaded, otherwise parallelization cannot be performed")
+      }else{
+        require("multicore")}}}
   if(parallel & multicore){
     warning("parallelization is performed using 'snowfall'")
   }
@@ -344,13 +348,13 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,seed
   names(minp) <- genes
 ################################################################################################################
 ## mutilple testing correction
-  p.adj.minp <- matrix(p.adjust(p=minp, method="bonferroni", n=nrgene),nrow=length(minp),ncol=1)
+  p.adj.minp <- matrix(p.adjust(p=minp, method=adj.method, n=nrgene),nrow=length(minp),ncol=1)
   rownames(p.adj.minp) <- genes
   colnames(p.adj.minp) <- c("p.adjust")
 ###############################################################################################################3
   minp <- as.matrix(minp)
   colnames(minp) <- "minP"
-  p.adj.psnp <- matrix(p.adjust(p=as.vector(p_value), method="bonferroni", n=nrsnp),nrow=length(p_value), ncol=1)	
+  p.adj.psnp <- matrix(p.adjust(p=as.vector(p_value), method=adj.method, n=nrsnp),nrow=length(p_value), ncol=1)	
   colnames(p.adj.psnp) <- c("p.adjust")
   rownames(p.adj.psnp) <- rownames(p_value)
   fit <- list(call=call,n=n,nrsnp=nrsnp,nrgene=nrgene,

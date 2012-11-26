@@ -4,7 +4,7 @@
 Plot method for "minPtest" object
 }
 \description{
-plot method for an object of class 'minPtest'. Plots, allowing to get an impression of important genes or/and SNPs.
+plot method for an object of class 'minPtest'. Plots allowing to get an impression of important genes or/and SNPs.
 }
 \usage{
 \S3method{plot}{minPtest}(x, type=c("gene" ,"SNP" ,"both"), level=0.05, lambda=1, gene.name=FALSE,
@@ -20,7 +20,7 @@ an object of class \code{minPtest}.
 by default, permutation-based p-values for each gene are plotted (\code{"gene"}). \code{"SNP"}: marginal p-values for each SNP are plotted. \code{"both"}: marginal p-values for each SNP and the transformed permutation-based p-values for each gene are displayed in a combined plot, see Details.
 }
   \item{level}{
-a numeric threshold that specifies which genes or/and SNPs are highlighted in the plot. I.e., not depending on the used type argument, the genes or/and SNPs with adjusted permutation-based p-values or/and marginal p-value, respectively, which are smaller than or equal to that threshold are by default highlighted in red. Default is 0.05.
+a numeric threshold that specifies which genes or/and SNPs are highlighted in the plot. I.e. not depending on the used \code{type} argument, the genes or/and SNPs with adjusted permutation-based p-values or/and marginal p-value, respectively, which are smaller than or equal to that threshold are by default highlighted in red. Default is 0.05.
 }
   \item{lambda}{
 only useful for \code{type="both"}. A numeric value to scale the y-axis for the permutation-based p-values of the genes (indicated at the right hand side). Default is 1.
@@ -39,13 +39,13 @@ Type of plotting for non significant permutation-based p-values (\code{type="gen
 Set type of plotting for both \code{sigPch} and \code{nonsigPch} (but can be overwritten by \code{sigPch} and \code{nonsigPch} if set)
 }
 \item{sigLty}{
-only useful for \code{type="both"}. Type of plotting for significant permutation-based p-values (if neither \code{sigLty} nor \code{lty} set: solid lines)
+only used for \code{type="both"}. Type of plotting for significant permutation-based p-values (if neither \code{sigLty} nor \code{lty} set: solid lines)
 }
 \item{nonsigLty}{
-only useful for \code{type="both"}. Type of plotting for non significant permutation-based p-values (if neither \code{nonsigLty} nor \code{lty} set: solid lines)
+only used for \code{type="both"}. Type of plotting for non significant permutation-based p-values (if neither \code{nonsigLty} nor \code{lty} set: solid lines)
 }
 \item{lty}{
-only useful for \code{type="both"}. Set type of plotting for both \code{sigLty} and \code{nonsigLty} (but can be overwritten by \code{sigLty} and \code{nonsigLty} if set)
+only used for \code{type="both"}. Set type of plotting for both \code{sigLty} and \code{nonsigLty} (but can be overwritten by \code{sigLty} and \code{nonsigLty} if set)
 }
 \item{sigCol}{
 Color for significant genes or/and significant SNPs (if neither \code{sigCol} nor \code{col} set: red)
@@ -64,11 +64,11 @@ Further arguments for the plot function.
 }
 }
 \details{
-The function plots either \code{(-log_{10})} transformed permutation-based p-values for each gene or \code{(-log_{10})} transformed marginal p-values for each SNP in a basic scatterplot. The y-axis is \code{(-log_{10})} transformed to obtain a disposition as a Manhattan plot for the points of the marginal p-values of the SNPs. Furthermore, an alternative given by the function is to display the marginal p-values for each SNP and the transformed permutation-based p-values for each gene in a combined plot. Therefore, \code{(-log_{10})} transformed marginal p-values for each SNP are plotted as points. In addition, horizontal lines of \code{(-lambda*log_{10})} transformed permutation-based p-values of each gene, covering all SNPs located on that gene, are plotted. The composed plot is indicated by two separated y-axes (\code{(-log_{10}(psnp))} at left hand side and \code{(-lambda*log_{10}(minp))} at the right hand side). After Bonferroni correction depending on the \code{level}, not depending on the used type of plot, significant genes and SNPs are by default highlighted in red, i.e. each permutation-based p-value or/and marginal p-value smaller than or equal to the \code{level}, respectively, is highlighted in red.
+The function plots either \code{(-log_{10})} transformed permutation-based p-values for each gene or \code{(-log_{10})} transformed marginal p-values for each SNP in a basic scatterplot. The y-axis is \code{(-log_{10})} transformed to obtain a disposition as a Manhattan plot for the points of the marginal p-values of the SNPs. Furthermore, an alternative given by the function is to display the marginal p-values for each SNP and the transformed permutation-based p-values for each gene in a combined plot. The \code{(-log_{10})} transformed marginal p-values for each SNP are plotted as points. In addition, horizontal lines of \code{(-lambda*log_{10})} transformed permutation-based p-values of each gene, covering all SNPs located on that gene, are plotted. The composed plot is indicated by two separated y-axes (\code{(-log_{10}(psnp))} at left hand side and \code{(-lambda*log_{10}(minp))} at the right hand side). After correction for multiple hypothesis testing depending on the \code{level} and the argument \code{adj.method} in the \code{\link{minPtest}} function, but not depending on the used type of plot, significant genes and SNPs are by default highlighted in red, i.e. each permutation-based p-value or/and marginal p-value smaller than or equal to the \code{level}, respectively, is highlighted in red.
 }
 
 \note{
-The default for \code{gene.name=FALSE}, used for \code{type="SNP"} and \code{type="both"}, should retained for performance reasons, if a large number of genes are included in the fit. For \code{type="both"} no \code{ylim} should be specified as the plot is indicated by two separate y-axes.
+The default for \code{gene.name=FALSE}, used for \code{type="SNP"} and \code{type="both"}, should kept for performance reasons, if a large number of genes are included in the fit. For \code{type="both"} no \code{ylim} should be specified as the plot is indicated by two separate y-axes.
 }
 
 \value{

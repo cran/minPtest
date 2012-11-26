@@ -10,8 +10,10 @@ Permutation-based p-values estimation via min P test, a gene region-level summar
 \usage{
 minPtest(y, x, SNPtoGene, formula = NULL, cov = NULL, matchset = NULL,
          permutation = 1000, seed = NULL, subset = NULL,
-         multicore = FALSE, parallel = FALSE, trace = FALSE,
-         aggregation.fun = min, ...)
+         multicore = FALSE, parallel = FALSE,
+         trace = FALSE, aggregation.fun = min,
+         adj.method=c("bonferroni","holm","hochberg","hommel","BH","BY","fdr","none"),
+         ...)
 }
 \arguments{
   \item{y}{
@@ -21,7 +23,7 @@ a numeric response vector coded with 0 (coding for controls) and 1 (coding for c
 a numeric \code{n * p} matrix of covariates (i.e. SNPs) containing the genotypes coded by 0, 1 and 2. Thus, each column is assumed to represent one of the SNPs with corresponding column names. Detail for SNP coding are given below.
 }
   \item{SNPtoGene}{
-a mapping matrix of dimension \code{p x 2} comprising of SNP names (first column) same as the column names of x, and the names of the genes (second column) on which the SNPs are located.
+a mapping matrix of dimension \code{p x 2} comprising SNP names (first column) which are same as the column names of x, and the gene names (second column) on which the SNPs are located.
 }
   \item{formula}{
 (optional) for unconditional or conditional logistic regression, respectively, with or without covariates other than SNPs. A symbolic description of the model to be fitted including covariates only, see \code{\link{glm}} or \code{\link[Epi]{clogistic}}, the latter requires library \pkg{Epi}, else the default method Cochran Armitage Trend Test, which requires library \pkg{scrime}, is fitted. Details of model specification are given below.
@@ -33,7 +35,7 @@ a mapping matrix of dimension \code{p x 2} comprising of SNP names (first column
 (optional) a numeric vector of length \code{n} containing matching numbers, needed for conditional logistic regression.
 }
   \item{permutation}{
-number of permutations employed for obtaining a null distribution.
+number of permutations employed to obtain a null distribution.
 }
   \item{seed}{
 (optional) vector of length \code{permutation}. Allows reproducibility even when running in parallel and for different numbers of parallel processes.
@@ -42,7 +44,7 @@ number of permutations employed for obtaining a null distribution.
 an optional vector specifying a subset of observations to be used in the fitting process.
 }
   \item{multicore}{
-indicates whether computation in the permuted data sets should be performed in parallel, using package \pkg{multicore}. If TRUE, the default numbers of cores are used. A value larger than 1 is taken to be the number of cores. Note that, \pkg{multicore} is currently not available with Microsoft Windows.
+indicates whether computation in the permuted data sets should be performed in parallel using package \pkg{parallel} or \pkg{multicore} depending on the availability. If TRUE and package \pkg{parallel} is used, the parallelization requires at least two cores using package \pkg{parallel}. If TRUE and package \pkg{multicore} is used, the default numbers of cores are used. A value larger than 1 is taken to be the number of cores. Note that, \pkg{multicore} is currently not available with Microsoft Windows.
 }
   \item{parallel}{
 logical value indicates whether computation should be performed in parallel on a compute cluster, using package \pkg{snowfall}. \code{parallel=FALSE} sequential execution is performed. If TRUE the initialization function of this package, \code{sfInit()}, should be called before calling minPtest. See Details.
@@ -53,18 +55,22 @@ logical value indicating whether progress in estimation should be indicated by p
 \item{aggregation.fun}{
   function that is used to combine the trend p-values over multiple loci within a gene region. By default the minimum  (\code{"min"}) is applied to obtain candidate gene region-level summaries. Any other function to integrate the p-values into one single test statistic can be used, e.g., \code{median} or different functions designed by the user.
 }
+\item{adj.method}{
+correction method for multiple hypothesis testing. By default the Bonferroni method (\code{"bonferroni"}) is used. Any other correction method as in \code{\link{p.adjust}} can be used.
+}
 \item{...}{
 Further arguments for \code{aggregation.fun}. In case of \code{NA/NaN} within the evaluated marginal trend p-values for the SNPs from the original data (\code{psnp}) or within the permuted trend p-values in the permutation samples (\code{psnpperm}), \code{na.rm=TRUE} has to be specified.
 }
 }
 \details{
-The idea of the gene region-level summary, using the min P test procedure (Westfall and Young, 1993; Westfall et al., 2002; Chen et al., 2006), is to identify candidate genes by assessing the statistical significance of the smallest p-trend from a set of SNPs (single nucleotide polymorphisms) within each gene region comparing cases and controls by permutation-based resampling methods. A SNP, i.e. genetic variation occurring at a single base pair position in the genome, can take three possible values (genotypes); either there is no SNP variant in comparison to some reference coding (homozygous reference (0)) or the SNP variant occurs on one of the two base pair positions (heterozygous (1)), or both base pairs have a variant comparing to the reference coding. \pkg{minPtest} permits to include, instead of the genotypes 0, 1 and 2, also combined carrier SNPs, e.g. coding 0 and 1 (1 + 2).
+The idea of the gene region-level summary, using the min P test procedure (Westfall and Young, 1993; Westfall et al., 2002; Chen et al., 2006), is to identify candidate genes by assessing the statistical significance of the smallest p-trend from a set of SNPs (single nucleotide polymorphisms) within each gene region comparing cases and controls by permutation-based resampling methods.
+A SNP occurs when a single nucleotide, (A), (T), (C) or (G), in the genome differs between individuals and, in addition, this variation, substitution of one nucleotide for another, occurs in more than 1\% of a population. A SNP can take three possible values (genotypes): either there is no SNP variant in comparison to some reference coding (homozygous reference (0)) or the SNP variant occurs on one of the two base pair positions (heterozygous (1)), or both base pairs have a variant comparing to the reference coding. \pkg{minPtest} permits to include, instead of the genotypes 0, 1 and 2, also combined carrier SNPs, e.g. coding 0 and 1 (1 + 2).
 
-Computation of min P test is based on marginal trend p-values for a set of univariate SNP disease association and trend p-values for permutation samples for each SNP. The \pkg{minPtest} package brings together three different kinds of tests to compute such p-values that are scattered over several R packages, and automatically selects the one most appropriate for the design at hand. In any case a response vector \code{y}, a SNP matrix \code{x} and a mapping matrix \code{SNPtoGene} are required. Then the default, a Cochran Armitage Trend Test (Cochran, 1954; Armitage, 1955), is automatically fitted to compute p-values. The Cochran Armitage Trend Test does not depend on covariates and matching scenario. Additionally adding a formula, see also \code{\link{glm}} from package \pkg{base}, and a covariate matrix \code{cov} an unconditional logistic regression is fitted. Unconditional logistic regression can be used without or with covariates for adjustment; either \code{formula=y~1} or \code{formula=y~cov1+cov2+...}. The former does not need any information relative to covariates and matching scenario. However, the latter is general for frequency matching with the inclusion of matching variables for adjustment specified in the covariate matrix \code{cov}. Providing a matchset, as in the case of 1:1; 1:2 etc. matching, and a formula, see also \code{\link[Epi]{clogistic}} from package \pkg{Epi}, a conditional logistic regression is fitted. Conditional logistic regression can be used without or with covariates for adjustment; either \code{formula=y~1} or \code{formula=y~cov1+cov2...}. In the latter case covariates other than matching variables can be used and have to be specified in the covariate matrix \code{cov}. In general, there are two possibilities to specify the formula, first if no covariates are used for adjustment, the formula has to be written as \code{y~1} without specifying the covariate matrix \code{cov}. Second if covariates other than SNPs are used for adjustment, the formula has to be written as response vector \code{y} on the left of a \code{~} operator, and the clinical covariates on the right, as well as a covariate matrix has to be specified.
+Computation of the min P test is based on the marginal trend p-values for a set of univariate SNP disease association and the trend p-values for the permutation samples for each SNP. The \pkg{minPtest} package brings together three different kinds of tests to compute such p-values that are scattered over several R packages, and automatically selects the one most appropriate for the design at hand. In any case a response vector \code{y}, a SNP matrix \code{x} and a mapping matrix \code{SNPtoGene} are required. Then the default, a Cochran Armitage Trend Test (Cochran, 1954; Armitage, 1955), is automatically fitted to compute p-values. The Cochran Armitage Trend Test does not depend on covariates and matching scenario. Additionally adding a formula, see also \code{\link{glm}} from package \pkg{base}, and a covariate matrix \code{cov} an unconditional logistic regression is fitted. Unconditional logistic regression can be used without or with covariates for adjustment; either \code{formula=y~1} or \code{formula=y~cov1+cov2+...}. The former does not need any information relative to covariates and matching scenario. However, the latter is general for frequency matching with the inclusion of matching variables for adjustment specified in the covariate matrix \code{cov}. Providing a matchset, as in the case of 1:1; 1:2 etc. matching, and a formula, see also \code{\link[Epi]{clogistic}} from package \pkg{Epi}, a conditional logistic regression is fitted. Conditional logistic regression can be used without or with covariates for adjustment; either \code{formula=y~1} or \code{formula=y~cov1+cov2...}. In the latter case covariates other than matching variables can be used and have to be specified in the covariate matrix \code{cov}. In general, there are two possibilities to specify the formula, first if no covariates are used for adjustment, the formula has to be written as \code{y~1} without specifying the covariate matrix \code{cov}. Second if covariates other than SNPs are used for adjustment, the formula has to be written as response vector \code{y} on the left of a \code{~} operator, and the clinical covariates on the right, as well as a covariate matrix has to be specified.
 
-If SNPs genotypes are coded by 0, 1 and 2, they are included as continuous variables in the logistic regression models. If SNPs are coded as carrier SNPs 0 and 1, they are included as binary variables in the logistic regression models. If covariates are used for adjustment, the column names of the covariate matrix \code{cov} have to be specified same as in the formula specification, to link the formula with the covariate matrix \code{cov}.
+If SNPs genotypes are coded by 0, 1 and 2, they are included as continuous variables in the logistic regression models. If SNPs are coded as carrier SNPs 0 and 1, they are included as binary variables in the logistic regression models. If covariates are used for adjustment, the column names of the covariate matrix \code{cov} have to be specified as used in the formula specification, to link the formula with the covariate matrix \code{cov}.
 
-Missing SNP genotypes in \code{x} or, if used, missing values in \code{cov} are accounted for, as each marginal test makes use of only the available data for that SNP in \code{x} and for that covariate in \code{cov}. \pkg{minPtest} uses all subjects with available data for each SNP (and covariates) when fitting Cochran Armitage Trend Test or unconditional logistic regression. Note that in conditional logistic regression, the matched subjects are removed together in case of 1:1 matching. In the 1:2 matching scenario, matched subjects are removed when the missing occurs in a case, otherwise when a missing occurs in one control, only that control is removed.
+Missing SNP genotypes in \code{x} or, if used, missing values in \code{cov} are accounted for, as each marginal test makes use of the available data for that SNP in \code{x} and for that covariate in \code{cov} only. The \pkg{minPtest} uses all subjects with available data for each SNP (and covariates) when fitting Cochran Armitage Trend Test or unconditional logistic regression. Note that in conditional logistic regression, the matched subjects are removed together in case of 1:1 matching. In the 1:2 matching scenario, matched subjects are removed when the missing occurs in a case, otherwise when a missing occurs in one control, only that control is removed.
 
 Concerning parallelization on a compute cluster, i.e. with argument \code{parallel=TRUE}, there are two possibilities to run \pkg{minPtest}:
 \enumerate{
@@ -81,9 +87,9 @@ A print function returns a short overviews of the results. The print function de
 \value{
 An object of class 'minPtest', which is a list containing the following components:
 \item{minp}{\code{nrgene * 1} matrix of permutation-based p-values of the min P test for each candidate gene.}
-\item{p.adj.minp}{\code{nrgene * 1} matrix of corrected permutation-based p-values via Bonferroni correction method for each candidate gene.}
+\item{p.adj.minp}{\code{nrgene * 1} matrix of corrected permutation-based p-values for each candidate gene.}
 \item{psnp}{\code{nrsnp * 1} matrix of marginal trend p-values for each SNP from the original data set.}
-\item{p.adj.psnp}{\code{nrsnp * 1} matrix of corrected marginal trend p-values via Bonferroni correction method for each SNP from the original data set.}
+\item{p.adj.psnp}{\code{nrsnp * 1} matrix of corrected marginal trend p-values for each SNP from the original data set.}
 \item{psnpperm}{\code{nrsnp * n.permute} matrix of permuted trend p-values for each SNP in each permutation step.}
 \item{zgen}{\code{nrgene * 1} matrix of min P test statistics for each candidate gene from the original data set.}
 \item{zgenperm}{\code{nrgene * n.permute} matrix of permuted min P test statistics for each candidate gene in each permutation step.}
