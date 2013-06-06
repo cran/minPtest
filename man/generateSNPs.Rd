@@ -67,7 +67,7 @@ An object of class 'generateSNPs', which is a list containing the following comp
 Schwender, H. et al. (2011). Testing SNPs and sets of SNPs for importance in association studies. Biostatistics, 12, 18-32.
 }
 \author{
-Stefanie Hieke \email{hieke@fdm.uni-freiburg.de}
+Stefanie Hieke \email{hieke@imbi.uni-freiburg.de}
 }
 \seealso{
 \code{\link{minPtest}}

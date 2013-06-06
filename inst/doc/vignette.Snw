@@ -117,10 +117,10 @@ This function returns a similar list as described in \ref{exa1}. The following c
 
 \section{Candidate gene analysis using the min P test}
 The main focus of the \textbf{minPtest} package is the computation of the permutation based p-values for candidate genes using the min P test. The gene region-level summary, as the min P test, assesses the statistical significance of the smallest p-trend within each gene region comparing cases and controls. Inference is based on the permutation distribution of the minimum of the ordered p-values from the marginal test of each SNP. The permutation method can be based on different univariate tests per SNP and the \texttt{minPtest} function brings together three different kinds of tests to compute such p-values.\\
-In order to illustrate the computation of the gene region-level testing procedure using unconditional and conditional logistic regression, respectively, to compute marginal and permuted trend p-values, we use the simulated data sets of \ref{exa1} and \ref{exa2}. An example to compute the gene region-level summary using an Cochran Armitage Trend Test is given at the help page of the \texttt{minPtest} function. As the computation of the p-values from permutation-based methods can be time-consuming, we use the \textbf{multicore} and the \textbf{snowfall} package to obtain acceleration by parallel computing in the examples \ref{minP1} or \ref{minP2}. An example for a sequential application is given on the help page of the \texttt{minPtest} function.
+In order to illustrate the computation of the gene region-level testing procedure using unconditional and conditional logistic regression, respectively, to compute marginal and permuted trend p-values, we use the simulated data sets of \ref{exa1} and \ref{exa2}. An example to compute the gene region-level summary using an Cochran Armitage Trend Test is given at the help page of the \texttt{minPtest} function. As the computation of the p-values from permutation-based methods can be time-consuming, we use the \textbf{parallel} and the \textbf{snowfall} package to obtain acceleration by parallel computing in the examples \ref{minP1} or \ref{minP2}. An example for a sequential application is given on the help page of the \texttt{minPtest} function.
 
-\subsection{Computing the min P test using unconditional logistic regression and \textbf{multicore}}\label{minP1}
-We start by accessing the simulated data set of \ref{exa1}. A short explanation might be useful before calling the \texttt{minPtest} function. The \textbf{minPtest} package brings together three different kinds of tests which are scattered over several \textbf{R} packages, and the \texttt{minPtest} function automatically selects the most appropriate test for the study design at hand. Trend p-values are computed using Cochran Armitage Trend Test including only a response vector, a SNP matrix and a matrix comprising the SNP names and the corresponding gene names on which the SNPs are located, see the help page of the \texttt{minPtest} function. In the example below, additional to the response vector, the SNP matrix and the matrix comprising SNP and the corresponding gene names generated in \texttt{sim.ex1} (\ref{exa1}), we specify a formula to compute the trend p-values using the unconditional logistic regression. Note that no matchset vector is needed. There are two possibilities to specify the formula. First, if no covariates are used for adjustment in the unconditional logistic regression, the formula has to be written as \texttt{y}$\sim$1 without specifying the covariate matrix \texttt{cov}. Second, if covariates other than SNPs are used for adjustment in the unconditional logistic regression, the formula has to be written by the response vector \texttt{y} on the left of a $\sim$ operator and the clinical covariates on the right. In addition, a covariate matrix has to be specified. In the example below we use a continuous and a binary covariate simulated in \ref{exa1} for adjustment. We run the call of the \texttt{minPtest} function on a multicore computer with 4 cores, in order to obtain acceleration by parallel computing, by setting option \texttt{multicore=4} which requires the installation of the \textbf{multicore} package, as the \texttt{minPtest} call can take some time. Note, \textbf{multicore} is currently not available on Microsoft Windows. An alternative to \texttt{multicore} for Microsoft Windows system users is the \textbf{snowfall} package, see \ref{minP2}. We set a seed to generate  \texttt{seed1} of length \texttt{permutation} to guarantee reproducibility of the results even if running in parallel and for different numbers of parallel processes.
+\subsection{Computing the min P test using unconditional logistic regression and \textbf{parallel}}\label{minP1}
+We start by accessing the simulated data set of \ref{exa1}. A short explanation might be useful before calling the \texttt{minPtest} function. The \textbf{minPtest} package brings together three different kinds of tests which are scattered over several \textbf{R} packages, and the \texttt{minPtest} function automatically selects the most appropriate test for the study design at hand. Trend p-values are computed using Cochran Armitage Trend Test including only a response vector, a SNP matrix and a matrix comprising the SNP names and the corresponding gene names on which the SNPs are located, see the help page of the \texttt{minPtest} function. In the example below, additional to the response vector, the SNP matrix and the matrix comprising SNP and the corresponding gene names generated in \texttt{sim.ex1} (\ref{exa1}), we specify a formula to compute the trend p-values using the unconditional logistic regression. Note that no matchset vector is needed. There are two possibilities to specify the formula. First, if no covariates are used for adjustment in the unconditional logistic regression, the formula has to be written as \texttt{y}$\sim$1 without specifying the covariate matrix \texttt{cov}. Second, if covariates other than SNPs are used for adjustment in the unconditional logistic regression, the formula has to be written by the response vector \texttt{y} on the left of a $\sim$ operator and the clinical covariates on the right. In addition, a covariate matrix has to be specified. In the example below we use a continuous and a binary covariate simulated in \ref{exa1} for adjustment. We run the call of the \texttt{minPtest} function on a multicore computer with 4 cores, in order to obtain acceleration by parallel computing, by setting option \texttt{parallel=4}, as the \texttt{minPtest} call can take some time. We set a seed to generate  \texttt{seed1} of length \texttt{permutation} to guarantee reproducibility of the results even if running in parallel and for different numbers of parallel processes.
 
 
 \begin{verbatim}
@@ -132,7 +132,7 @@ We start by accessing the simulated data set of \ref{exa1}. A short explanation 
 > minPtest.object1 <- minPtest(y=sim.ex1$y, x=sim.ex1$x,
                                SNPtoGene=sim.ex1$SNPtoGene,
                                formula=y~cov.continuous+cov.binary,
-                               cov=sim.ex1$cov, multicore=4, seed=seed1)
+                               cov=sim.ex1$cov, parallel=4, seed=seed1)
 \end{verbatim}
 
 \begin{verbatim}
@@ -141,7 +141,7 @@ We start by accessing the simulated data set of \ref{exa1}. A short explanation 
 Used method: unconditional logistic regression (glm) for 100 subjects
 Call:  minPtest(y = sim.ex1$y, x = sim.ex1$x,
 SNPtoGene = sim.ex1$SNPtoGene, formula = y ~ cov.continuous + cov.binary,
-cov = sim.ex1$cov, seed = seed1, multicore = 4) 
+cov = sim.ex1$cov, seed = seed1, parallel = 4) 
 
 Number of genes: 5 
 Number of SNPs: 200 
@@ -180,7 +180,7 @@ Above the display provided by the \texttt{summary} function can be seen. The tab
 The \texttt{summary} function returns a list of the same length as the number of the selected genes by a threshold. Each item characterizes a gene selected according to a threshold i.e. if \texttt{level=1}, the length of the list equals to the number of genes included in the fit. Each gene item contains a list of data frames, a data frame for the permutation-based p-values and adjusted permutation-based p-values for this gene and a data frame for the marginal p-values and adjusted marginal p-values for the SNPs located on this gene, either SNPs selected by a threshold or all SNPs on this gene.
 
 \subsection{Computing the min P test using conditional logistic regression and \textbf{snowfall}}\label{minP2}
-We start by accessing the simulated data set of \ref{exa2}. We sampled 100 subjects (50 cases and 50 controls) and 200 SNPs on 5 genes in \texttt{sim.ex2} (\ref{exa2}) as in \ref{exa1} except for the probability for the neighborhood SNPs within the blocks as we generated a break within the first block at SNP position 6 in each gene, see \ref{exa2}. In this example, we illustrate the computation of the trend p-values using conditional logistic regression which requires the installation of package \textbf{Epi}. The computation of the trend p-values using conditional logistic regression is automatically selected by the \texttt{minPtest} function investigating the following input from \texttt{sim.ex2} (\ref{exa2}). As in \ref{minP1}, we include the response vector, the SNP matrix and a matrix comprising the SNP names and the gene names on which the SNPs are located, generated in \texttt{sim.ex2}. Compared to \ref{minP1}, we use the continuous and the binary covariate simulated in \ref{exa2} as matching variables through the matchset vector \texttt{matchset} and do not include them in the covariate matrix \texttt{cov} for adjustment. Therefore, as no covariates are used for adjustment, the formula has to be written as $y\sim1$ without specifying a covariate matrix. However, a matchset vector has to be specified. We set a seed to guarantee reproducibility of the results, even for different numbers of parallel processes, see \ref{exa1}. We run the call of the \texttt{minPtest} function on a compute cluster using 4 CPUs, to obtain acceleration by parallel computing by setting option \texttt{parallel=TRUE} which requires the installation of the \textbf{snowfall} package, as the \texttt{minPtest} call can take some time. Concerning parallelization on a compute cluster, i.e. with argument \texttt{parallel=TRUE}, there are two possibilities to run the \texttt{minPtest} call:
+We start by accessing the simulated data set of \ref{exa2}. We sampled 100 subjects (50 cases and 50 controls) and 200 SNPs on 5 genes in \texttt{sim.ex2} (\ref{exa2}) as in \ref{exa1} except for the probability for the neighborhood SNPs within the blocks as we generated a break within the first block at SNP position 6 in each gene, see \ref{exa2}. In this example, we illustrate the computation of the trend p-values using conditional logistic regression which requires the installation of package \textbf{Epi}. The computation of the trend p-values using conditional logistic regression is automatically selected by the \texttt{minPtest} function investigating the following input from \texttt{sim.ex2} (\ref{exa2}). As in \ref{minP1}, we include the response vector, the SNP matrix and a matrix comprising the SNP names and the gene names on which the SNPs are located, generated in \texttt{sim.ex2}. Compared to \ref{minP1}, we use the continuous and the binary covariate simulated in \ref{exa2} as matching variables through the matchset vector \texttt{matchset} and do not include them in the covariate matrix \texttt{cov} for adjustment. Therefore, as no covariates are used for adjustment, the formula has to be written as $y\sim1$ without specifying a covariate matrix. However, a matchset vector has to be specified. We set a seed to guarantee reproducibility of the results, even for different numbers of parallel processes, see \ref{exa1}. We run the call of the \texttt{minPtest} function on a compute cluster using 4 CPUs, to obtain acceleration by parallel computing by setting option \texttt{ccparallel=TRUE} which requires the installation of the \textbf{snowfall} package, as the \texttt{minPtest} call can take some time. Concerning parallelization on a compute cluster, i.e. with argument \texttt{ccparallel=TRUE}, there are two possibilities to run the \texttt{minPtest} call:
 
 \begin{itemize}
 \item Start \textbf{R} on a commandline with sfCluster and preferred options, e.g. number of cpus. The initialization function of package \textbf{snowfall}, \texttt{sfInit()}, has to be called before calling the \texttt{minPtest} function.\\
@@ -190,19 +190,18 @@ sfCluster is a Unix tool for convenient management of \textbf{R} parallel proces
 > minPtest.object2 <- minPtest(y=sim.ex2$y, x=sim.ex2$x,
                                SNPtoGene=sim.ex2$SNPtoGene,
                                formula=y~1, matchset=sim.ex2$matchset,
-                               parallel=TRUE, seed=seed1)
+                               ccparallel=TRUE, seed=seed1)
 \end{verbatim}
-\item Use any other solutions supported by \textbf{snowfall}. Argument \texttt{parallel} has to be set to TRUE and number of cpus can be chosen in the \texttt{sfInit()} function.
+\item Use any other solutions supported by \textbf{snowfall}. Argument \texttt{ccparallel} has to be set to TRUE and number of cpus can be chosen in the \texttt{sfInit()} function.
 \begin{verbatim}
 > sfInit(parallel=TRUE,cpus=4)
 > minPtest.object2 <- minPtest(y=sim.ex2$y, x=sim.ex2$x,
                                SNPtoGene=sim.ex2$SNPtoGene,
                                formula=y~1, matchset=sim.ex2$matchset,
-                               parallel=TRUE,seed=seed1)
+                               ccparallel=TRUE,seed=seed1)
 \end{verbatim}
 \end{itemize}
 
-The latter is an alternative to the parallelization on a multicore computer with \texttt{multicore} for Microsoft Windows system users.\\
 Independent of the chosen initialization function, the following display is provided by the \texttt{print} function.
 
 \begin{verbatim}
@@ -211,7 +210,7 @@ Independent of the chosen initialization function, the following display is prov
 Used method: conditional logistic regression for 100 subjects
 Call:  minPtest(y = sim.ex2$y, x = sim.ex2$x,
 SNPtoGene = sim.ex2$SNPtoGene, formula = y ~ 1,
-matchset = sim.ex2$matchset, seed = seed1, parallel = TRUE) 
+matchset = sim.ex2$matchset, seed = seed1, ccparallel = TRUE) 
 
 Number of genes: 5 
 Number of SNPs: 200 

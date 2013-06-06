@@ -1,6 +1,6 @@
 minPtest <-
 function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
-         seed=NULL,subset=NULL,multicore=FALSE,parallel=FALSE,trace=FALSE,
+         seed=NULL,subset=NULL,parallel=FALSE,ccparallel=FALSE,trace=FALSE,
          aggregation.fun=min,adj.method=c("bonferroni","holm","hochberg","hommel","BH","BY","fdr","none"), ...){
   call <- match.call()
   adj.method = match.arg(adj.method)
@@ -50,7 +50,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
   nrsnp <- dim(x)[2]
   n <- length(y)
   nrgene <- length(unique(SNPtoGene[,2]))
-  if(parallel){
+  if(ccparallel){
     if(!require("snowfall")) {
       stop("package 'snowfall' must be installed and loaded, otherwise parallelization cannot be performed")
     }else{
@@ -58,14 +58,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
       if(!sfIsRunning()) sfInit(parallel=TRUE)
     }
   }
-  if(multicore){
-    try(library("parallel"), silent=TRUE)
-       if("try-error" %in% class(try(library(parallel), silent=TRUE))){
-      if(!require("multicore")){
-        stop("package 'parallel' or package 'multicore' must be installed and loaded, otherwise parallelization cannot be performed")
-      }else{
-        require("multicore")}}}
-  if(parallel & multicore){
+  if(parallel){
+    if(!require("parallel")){
+      stop("package 'parallel' must be installed and loaded, otherwise parallelization cannot be performed")
+    }else{
+      require("parallel")}}
+  if(parallel & ccparallel){
     warning("parallelization is performed using 'snowfall'")
   }
 ##################################Cochran-Armitage trend test###################################################
@@ -86,7 +84,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
     valmax <- max(unique_snps, na.rm=TRUE)
     valmin <- min(unique_snps, na.rm=TRUE)
     tsnps <- t(x)
-    if(parallel){
+    if(ccparallel){
       sfLibrary("scrime", character.only=TRUE)
       sfExport("valmax","valmin","tsnps")
     }
@@ -109,7 +107,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
     if(!is.null(cov) & as.character(formula)[3]==1){
       warning("no specification of covariables in the formula, logistic regression is performed without covariables")
     }
-    if(parallel){
+    if(ccparallel){
       sfExport("formula","snpvecnames")
       if(!is.null(matchset)){
         sfExport("n","matchset")
@@ -126,7 +124,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
       if(is.null(matchset)){
         method <- "unconditional logistic regression (glm)"
         actual.frame <- dat[,colnames(dat)[1], drop=FALSE]
-        if(parallel){ sfExport("dat", "actual.frame") }
+        if(ccparallel){ sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
           actual.frame$SNP <- dat[,snpvecnames[i]]
           new.form <- as.formula(paste(as.character(formula)[2],"SNP", sep = "~"))
@@ -158,7 +156,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
         method <- "conditional logistic regression"
         dat$matchset <- matchset
         actual.frame <- dat[,c(colnames(dat)[1],"matchset")]
-        if(parallel){ sfExport("dat", "actual.frame") }
+        if(ccparallel){ sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
           actual.frame$SNP <- dat[,snpvecnames[i]]
           new.form <- as.formula(paste(as.character(formula)[2],"SNP", sep = "~"))
@@ -211,7 +209,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
       if(is.null(matchset)){
         method <- "unconditional logistic regression (glm)"
         actual.frame <- dat[,c(colnames(dat)[1], colnames(cov))]
-        if(parallel) { sfExport("dat", "actual.frame") }
+        if(ccparallel) { sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
           actual.frame$SNP <- dat[,snpvecnames[i]]
           new.form <- as.formula(paste(deparse(formula),"SNP", sep = "+"))
@@ -243,7 +241,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
         method <- "conditional logistic regression (clogistic)"
         dat$matchset <- matchset
         actual.frame <- dat[,c(colnames(dat)[1], colnames(cov), "matchset")]
-        if(parallel) { sfExport("dat", "actual.frame") }
+        if(ccparallel) { sfExport("dat", "actual.frame") }
         p_valfunc <- function(i) {
           actual.frame$SNP <- dat[,snpvecnames[i]]
           new.form <- as.formula(paste(deparse(formula), "SNP", sep = "+"))
@@ -280,12 +278,12 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
 ###################################################################################
       }
     }
-    if(parallel){
+    if(ccparallel){
       p_value <- sfClusterApplyLB(seq_along(snpvecnames),p_valfunc)
     }else{
-      if(multicore){
-        if(multicore>1){
-          p_value <- mclapply(seq_along(snpvecnames),p_valfunc,mc.preschedule=FALSE,mc.cores=multicore)
+      if(parallel){
+        if(parallel>1){
+          p_value <- mclapply(seq_along(snpvecnames),p_valfunc,mc.preschedule=FALSE,mc.cores=parallel)
         }else{
           p_value <- mclapply(seq_along(snpvecnames),p_valfunc,mc.preschedule=FALSE)
         }
@@ -303,14 +301,14 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
       stop("length of seed vector should equal the number of permutations")
     }
   }
-  if(parallel){
+  if(ccparallel){
     sfExport("y","seed","permutation","trace")
     p_valuesperr <- sfClusterApplyLB(1:permutation, perrfunc)
     sfStop()
   }else{
-    if(multicore){
-      if(multicore>1){
-        p_valuesperr <- mclapply(1:permutation,perrfunc,mc.preschedule=FALSE,mc.cores=multicore)
+    if(parallel){
+      if(parallel>1){
+        p_valuesperr <- mclapply(1:permutation,perrfunc,mc.preschedule=FALSE,mc.cores=parallel)
       }else{
         p_valuesperr <- mclapply(1:permutation,perrfunc,mc.preschedule=FALSE)
       }

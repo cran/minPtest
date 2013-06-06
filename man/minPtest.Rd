@@ -10,9 +10,10 @@ Permutation-based p-values estimation via min P test, a gene region-level summar
 \usage{
 minPtest(y, x, SNPtoGene, formula = NULL, cov = NULL, matchset = NULL,
          permutation = 1000, seed = NULL, subset = NULL,
-         multicore = FALSE, parallel = FALSE,
+         parallel = FALSE, ccparallel = FALSE,
          trace = FALSE, aggregation.fun = min,
-         adj.method=c("bonferroni","holm","hochberg","hommel","BH","BY","fdr","none"),
+         adj.method=c("bonferroni","holm","hochberg",
+                      "hommel","BH","BY","fdr","none"),
          ...)
 }
 \arguments{
@@ -43,11 +44,11 @@ number of permutations employed to obtain a null distribution.
   \item{subset}{
 an optional vector specifying a subset of observations to be used in the fitting process.
 }
-  \item{multicore}{
-indicates whether computation in the permuted data sets should be performed in parallel using package \pkg{parallel} or \pkg{multicore} depending on the availability. If TRUE and package \pkg{parallel} is used, the parallelization requires at least two cores using package \pkg{parallel}. If TRUE and package \pkg{multicore} is used, the default numbers of cores are used. A value larger than 1 is taken to be the number of cores. Note that, \pkg{multicore} is currently not available with Microsoft Windows.
-}
   \item{parallel}{
-logical value indicates whether computation should be performed in parallel on a compute cluster, using package \pkg{snowfall}. \code{parallel=FALSE} sequential execution is performed. If TRUE the initialization function of this package, \code{sfInit()}, should be called before calling minPtest. See Details.
+indicates whether computation in the permuted data sets should be performed in parallel using package \pkg{parallel}. If TRUE, the parallelization requires at least two cores. A value larger than 1 is taken to be the number of cores.
+}
+  \item{ccparallel}{
+logical value indicates whether computation should be performed in parallel on a compute cluster, using package \pkg{snowfall}. If TRUE the initialization function of this package, \code{sfInit()}, should be called before calling minPtest. See Details.
 }
   \item{trace}{
 logical value indicating whether progress in estimation should be indicated by printing the number of permutation that is currently used. (ignored if running in parallel via \pkg{snowfall}).
@@ -72,11 +73,11 @@ If SNPs genotypes are coded by 0, 1 and 2, they are included as continuous varia
 
 Missing SNP genotypes in \code{x} or, if used, missing values in \code{cov} are accounted for, as each marginal test makes use of the available data for that SNP in \code{x} and for that covariate in \code{cov} only. The \pkg{minPtest} uses all subjects with available data for each SNP (and covariates) when fitting Cochran Armitage Trend Test or unconditional logistic regression. Note that in conditional logistic regression, the matched subjects are removed together in case of 1:1 matching. In the 1:2 matching scenario, matched subjects are removed when the missing occurs in a case, otherwise when a missing occurs in one control, only that control is removed.
 
-Concerning parallelization on a compute cluster, i.e. with argument \code{parallel=TRUE}, there are two possibilities to run \pkg{minPtest}:
+Concerning parallelization on a compute cluster, i.e. with argument \code{ccparallel=TRUE}, there are two possibilities to run \pkg{minPtest}:
 \enumerate{
 \item Start R on a commandline with sfCluster (Knaus et al., 2009) and preferred options, e.g. number of cpus. The initialization function of package \pkg{snowfall}, \code{sfInit()}, should be called before calling minPtest.
 
-\item Use any other solutions supported by \pkg{snowfall}. Argument \code{parallel} has to be set to TRUE and number of cpus can be chosen in the \code{sfInit()} function.
+\item Use any other solutions supported by \pkg{snowfall}. Argument \code{ccparallel} has to be set to TRUE and number of cpus can be chosen in the \code{sfInit()} function.
 }
 
 sfCluster is a Unix tool for convenient management of R parallel processes. It is available at
@@ -116,7 +117,7 @@ Westfall,P.H. et al.(2002). Multiple tests for genetic effects in association st
 Westfall,P.H. and Young,S.S. (1993). Resampling-Based Multiple Testing: Example and Methods for p-Value Adjustment. Wiley, New York.
 }
 \author{
-Stefanie Hieke \email{hieke@fdm.uni-freiburg.de}
+Stefanie Hieke \email{hieke@imbi.uni-freiburg.de}
 }
 \seealso{
 \code{\link{summary.minPtest}}, \code{\link{plot.minPtest}}
@@ -142,7 +143,7 @@ set.seed(10)
 seed1 <- sample(1:1e7,size=1000)
 ###
 minPtest.object <- minPtest(y=sim1$y, x=sim1$x, SNPtoGene=sim1$SNPtoGene,
-	seed=seed1)
+	                    seed=seed1)
 
 }
 \keyword{single nucleotide polymorphisms}

@@ -76,7 +76,7 @@ No value returned
 }
 
 \author{
-Stefanie Hieke \email{hieke@fdm.uni-freiburg.de}
+Stefanie Hieke \email{hieke@imbi.uni-freiburg.de}
 }
 \seealso{
   \code{\link{minPtest}}, \code{\link{generateSNPs}}
@@ -92,7 +92,8 @@ colnames(SNPtoBETA) <- c("SNP.item","SNP.beta")
 
 set.seed(191)
 sim1 <- generateSNPs(n=100,gene.no=5,block.no=4,block.size=10,p.same=0.9,
-	p.different=0.75,p.minor=c(0.1,0.4,0.1,0.4),n.sample=80,SNPtoBETA=SNPtoBETA)
+	             p.different=0.75,p.minor=c(0.1,0.4,0.1,0.4),
+                     n.sample=80,SNPtoBETA=SNPtoBETA)
 
 
 # Cochran Armitage Trend Test without covariates and default permutations.
@@ -103,10 +104,13 @@ set.seed(10)
 seed1 <- sample(1:1e7,size=1000)
 ###
 minPtest.object <- minPtest(y=sim1$y, x=sim1$x, SNPtoGene=sim1$SNPtoGene,
-	seed=seed1)
+	                    seed=seed1)
 ### Combined plot for permutation-based p-values and marginal p-values.
 plot(minPtest.object,type="both",lambda=0.5,gene.name=TRUE)
 
-### Combined plot for permutation-based p-values and marginal p-values. Plot significant permutation-based p-values and significant marginal p-values as blue dotted lines and blue points
-## plot(minPtest.object,type="both",lambda=0.5,gene.name=TRUE,sigCol="blue",sigLty=2)
+## Combined plot for permutation-based p-values and marginal
+## p-values. Plot permutation-based p-values and significant marginal
+## p-values as blue dotted lines and blue points
+## plot(minPtest.object,type="both",lambda=0.5,
+##      gene.name=TRUE,sigCol="blue",sigLty=2)
 }

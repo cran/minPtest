@@ -29,7 +29,7 @@ Prints the genes with adjusted permutation-based p-value smaller than or equal t
 \code{summary.minPtest} returns a list. Each item characterizes a gene, selected according to a \code{level}, list items are named by means of these genes. Each gene item contains a list of data frames, a data frame for the permutation-based p-values and adjusted permutation-based p-values for this gene and a data frame for the marginal p-values and adjusted marginal p-values for the SNPs located on that gene, either all SNPs or SNPs selected by the \code{level}.
 }
 \author{
-Stefanie Hieke \email{hieke@fdm.uni-freiburg.de}
+Stefanie Hieke \email{hieke@imbi.uni-freiburg.de}
 }
 \seealso{
 \code{\link{generateSNPs}}, \code{\link{minPtest}}
@@ -45,7 +45,8 @@ colnames(SNPtoBETA) <- c("SNP.item","SNP.beta")
 
 set.seed(191)
 sim1 <- generateSNPs(n=100,gene.no=5,block.no=4,block.size=10,p.same=0.9,
-	p.different=0.75,p.minor=c(0.1,0.4,0.1,0.4),n.sample=80,SNPtoBETA=SNPtoBETA)
+	             p.different=0.75,p.minor=c(0.1,0.4,0.1,0.4),
+                     n.sample=80,SNPtoBETA=SNPtoBETA)
 
 # Cochran Armitage Trend Test without covariates and default permutations.
 # Example: Run R sequential
@@ -55,7 +56,7 @@ set.seed(10)
 seed1 <- sample(1:1e7,size=1000)
 ###
 minPtest.object <- minPtest(y=sim1$y, x=sim1$x, SNPtoGene=sim1$SNPtoGene,
-	seed=seed1)
+	                    seed=seed1)
 ###
 summary(minPtest.object)
 }
