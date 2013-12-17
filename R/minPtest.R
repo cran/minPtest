@@ -161,8 +161,8 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
           actual.frame$SNP <- dat[,snpvecnames[i]]
           new.form <- as.formula(paste(as.character(formula)[2],"SNP", sep = "~"))
           fit <- clogistic(new.form, strata=matchset, data=actual.frame)
-          coef <- Epi:::coef.clogistic(fit)
-          se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+	  coef <- fit$coefficients
+          se <- sqrt(diag(fit$var))
           p <- 1 - pchisq((coef/se)^2, 1)
           fit.res <- p[length(p)]
           names(fit.res) <- snpvecnames[i]
@@ -180,8 +180,8 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
             actual.frame$SNP <- dat[,snpvecnames[i]]
             new.form <- as.formula(paste("permy", "SNP", sep = "~"))
             fit <- clogistic(new.form, strata=permmatch, data=actual.frame)
-            coef <- Epi:::coef.clogistic(fit)
-            se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+	    coef <- fit$coefficients
+	    se <- sqrt(diag(fit$var))
             p <- 1 - pchisq((coef/se)^2, 1)
             fit.res <- p[length(p)]
             fit.res
@@ -204,7 +204,7 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
       dat <- as.data.frame(cbind(y,cov,x))
       colnames(dat)[1] <- as.character(formula)[2]
       perr.formula <- paste("permy",as.character(formula)[3],sep="~")
-      if(parallel){ sfExport("perr.formula") }
+      if(ccparallel){ sfExport("perr.formula") }
 #unconditional logistic regression with covariables
       if(is.null(matchset)){
         method <- "unconditional logistic regression (glm)"
@@ -246,8 +246,8 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
           actual.frame$SNP <- dat[,snpvecnames[i]]
           new.form <- as.formula(paste(deparse(formula), "SNP", sep = "+"))
           fit <- clogistic(new.form, strata=matchset, data=actual.frame)
-          coef <- Epi:::coef.clogistic(fit)
-          se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+          coef <- fit$coefficients
+          se <- sqrt(diag(fit$var))
           p <- 1 - pchisq((coef/se)^2, 1)
           fit.res <- p[length(p)]
           names(fit.res) <- snpvecnames[i]
@@ -265,8 +265,8 @@ function(y,x,SNPtoGene,formula=NULL,cov=NULL,matchset=NULL,permutation=1000,
             actual.frame$SNP <- dat[,snpvecnames[i]]
             new.form <- as.formula(paste(perr.formula, "SNP", sep = "+"))
             fit <- clogistic(new.form, strata=permmatch, data=actual.frame)
-            coef <- Epi:::coef.clogistic(fit)
-            se <- sqrt(diag(Epi:::vcov.clogistic(fit)))
+	    coef <- fit$coefficients
+	    se <- sqrt(diag(fit$var))
             p <- 1 - pchisq((coef/se)^2, 1)
             fit.res <- p[length(p)]
             fit.res
